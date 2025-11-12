@@ -1,0 +1,63 @@
+// components/CustomInput.tsx
+import React from 'react';
+import { View, TextInput, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
+
+type Props = {
+  value: string;
+  onChangeText: (v: string) => void;
+  placeholder?: string;
+  secureTextEntry?: boolean;
+  iconName?: string; // Ionicons name
+  keyboardType?: 'default' | 'email-address' | 'numeric';
+};
+
+export default function CustomInput({
+  value,
+  onChangeText,
+  placeholder,
+  secureTextEntry,
+  iconName,
+  keyboardType = 'default',
+}: Props) {
+  return (
+    <View style={styles.container}>
+      {iconName ? <Ionicons name={iconName as any} size={20} style={styles.icon} /> : null}
+      <TextInput
+        style={styles.input}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        secureTextEntry={secureTextEntry}
+        keyboardType={keyboardType}
+        placeholderTextColor="#6b7280"
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+    marginVertical: 8,
+    // shadow
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  icon: {
+    marginRight: 8,
+    color: '#10B981',
+  },
+  input: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111827',
+  },
+});
