@@ -52,8 +52,12 @@ export const getAllStudents = async (req, res) => {
 // 🧠 READ - GET one by ID
 export const getStudentById = async (req, res) => {
   try {
-    const student = await Student.findById(req.params.id);
+    const student = await Student.findById(req.params.id)
+      .populate("classId", "name level")
+      .populate("teacher", "name email");
+
     if (!student) return res.status(404).json({ message: "Not found" });
+
     res.json(student);
   } catch (err) {
     res.status(500).json({ error: err.message });

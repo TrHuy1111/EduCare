@@ -1,33 +1,55 @@
+// EduCareApp/screens/StudentProfileScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { getStudentById } from '../src/services/studentService';
 
 export default function StudentProfileScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { studentId }: any = route.params;
+
+  // safe get studentId
+  const studentId = (route.params as any)?.studentId;
+
   const [student, setStudent] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    if (!studentId) {
+      console.warn('No studentId passed to StudentProfileScreen', route.params);
+      Alert.alert('Không tìm thấy học sinh', 'Vui lòng quay lại và chọn học sinh khác.', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+      return;
+    }
+
     loadProfile();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId]);
 
   const loadProfile = async () => {
     try {
       setLoading(true);
       const res = await getStudentById(studentId);
       setStudent(res.data);
+      console.log("📌 Student detail:", res.data);
     } catch (err: any) {
-      console.log('❌ Lỗi load profile:', err.message);
+      console.log('❌ Lỗi load profile:', err.message || err);
+      Alert.alert('Lỗi', 'Không thể tải thông tin học sinh.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading || !student)
-    return <ActivityIndicator size="large" color="#10B981" style={{ marginTop: 40 }} />;
+  if (loading) return <ActivityIndicator size="large" color="#10B981" style={{ marginTop: 40 }} />;
+
+  if (!student) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text>Không có dữ liệu học sinh.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -55,23 +77,27 @@ export default function StudentProfileScreen() {
         <Text style={styles.value}>{student.name}</Text>
 
         <Text style={styles.label}>Class</Text>
-        <Text style={styles.value}>{student.class}</Text>
+        <Text style={styles.value}>
+                         {typeof student.classId === "string" 
+                            ? student.classId 
+                            : student.classId?.name || "N/A"}
+                      </Text>
 
         <Text style={styles.label}>Address</Text>
         <Text style={styles.value}>{student.address}</Text>
 
         <Text style={styles.label}>Date of birth</Text>
         <Text style={styles.value}>
-          {new Date(student.dob).toLocaleDateString('vi-VN')}
+          {student.dob ? new Date(student.dob).toLocaleDateString('vi-VN') : 'N/A'}
         </Text>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Emergency Contacts</Text>
-        <Text style={styles.value}>{student.motherName} / Mother</Text>
-        <Text style={styles.value}>{student.motherPhone}</Text>
-        <Text style={styles.value}>{student.fatherName} / Father</Text>
-        <Text style={styles.value}>{student.fatherPhone}</Text>
+        <Text style={styles.value}>{student.motherName ?? 'N/A'} / Mother</Text>
+        <Text style={styles.value}>{student.motherPhone ?? 'N/A'}</Text>
+        <Text style={styles.value}>{student.fatherName ?? 'N/A'} / Father</Text>
+        <Text style={styles.value}>{student.fatherPhone ?? 'N/A'}</Text>
       </View>
     </View>
   );

@@ -1,15 +1,17 @@
+// userRoutes.js
 import express from 'express';
 import { createOrUpdateUser, loginOrRegister,syncUser, updateUserRole,toggleUserStatus,getAllUsers,getTeachers } from '../controllers/userController.js';
 import { verifyFirebaseToken } from '../middlewares/authMiddleware.js';
 import { authMiddleware,isAdmin } from '../middlewares/auth.js';
-
+import { getCurrentUser } from "../controllers/userController.js";
 const router = express.Router();
 // GET /api/user/ -> verify token, then get all users (admin only)
 router.get('/', verifyFirebaseToken, getAllUsers);
 
 router.post('/', createOrUpdateUser);
 router.post('/login', verifyFirebaseToken,loginOrRegister);  
-
+//Get current user role 
+router.get('/me', verifyFirebaseToken, getCurrentUser);
 // POST /api/user/sync -> verify token, then create/update user
 router.post('/sync', verifyFirebaseToken, syncUser);
 //Role update only admin can do

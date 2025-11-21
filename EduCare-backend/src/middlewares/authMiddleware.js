@@ -1,3 +1,4 @@
+// authMiddleware.js
 import admin from "../firebaseAdmin.js";
 import User from "../models/User.js";
 

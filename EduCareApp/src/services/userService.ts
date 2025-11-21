@@ -77,3 +77,11 @@ export const logout = async (navigation: any) => {
   navigation.reset({ index: 0, routes: [{ name: "Auth" }] });
 };
 
+export const getCurrentUserRole = async () => {
+  const token = await getToken();
+  const res = await axios.get(`${API_URL}/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data.role;
+};
+

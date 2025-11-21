@@ -94,3 +94,31 @@ export const updateClass = async (req, res) => {
     res.status(500).json({ message: "Lỗi khi cập nhật lớp", error: err.message });
   }
 };
+// ✅ Xóa lớp
+export const deleteClass = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const deleted = await Class.findByIdAndDelete(classId);
+    if (!deleted) return res.status(404).json({ message: "Không tìm thấy lớp" });
+    res.status(200).json({ message: "Xóa lớp thành công" });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi xóa lớp", error: err.message });
+  }
+};
+// Lấy về lớp của giáo viên đó
+export const getClassesForTeacher = async (req, res) => {
+  try {
+    const teacherId = req.user._id;
+
+    const classes = await Class.find({
+      teachers: teacherId
+    })
+    .populate("teachers", "name email")
+    .populate("students", "name")
+    .populate("homeroomTeacher", "name email");
+
+    res.status(200).json(classes);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi khi lấy lớp của giáo viên", error: err.message });
+  }
+};

@@ -1,3 +1,4 @@
+// AdminStudentListScreen.tsx
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -205,7 +206,4 @@ backIcon: {
   height: 28,
   resizeMode: 'contain',
 },
-
-  
-
 });

@@ -5,6 +5,8 @@ import {
   assignTeacherToClass,
   enrollStudentToClass,
   updateClass,
+  deleteClass,
+  getClassesForTeacher,
 } from "../controllers/classController.js";
 
 import { verifyFirebaseToken } from "../middlewares/authMiddleware.js";
@@ -16,9 +18,10 @@ const router = express.Router();
 router.post("/", verifyFirebaseToken, checkRole(["admin"]), createClass);
 router.get("/", verifyFirebaseToken, checkRole(["admin", "teacher"]), getAllClasses);
 router.put("/:classId", verifyFirebaseToken, checkRole(["admin"]), updateClass);
-
+router.delete("/:classId", verifyFirebaseToken, checkRole(["admin"]), deleteClass);
 // 🧑‍🏫 Gán giáo viên & học sinh vào lớp
 router.post("/assign-teacher", verifyFirebaseToken, checkRole(["admin"]), assignTeacherToClass);
 router.post("/enroll-student", verifyFirebaseToken, checkRole(["admin"]), enrollStudentToClass);
-
+// 🧑‍🏫 Lấy lớp học của giáo viên
+router.get("/my-classes", verifyFirebaseToken, checkRole(["teacher"]), getClassesForTeacher);
 export default router;

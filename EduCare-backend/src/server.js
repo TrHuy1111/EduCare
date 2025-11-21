@@ -5,6 +5,9 @@ import dotenv from 'dotenv';
 import userRoutes from './routes/userRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
 import classRoutes from './routes/classRoutes.js';
+import attendanceRoutes from './routes/attendanceRoutes.js';
+import activityRoutes from './routes/activityRoutes.js';
+
 dotenv.config();
 
 const app = express();
@@ -22,5 +25,9 @@ app.use('/api/class', classRoutes);
 app.use('/api/user', userRoutes); 
 
 app.use('/api/student', studentRoutes);
+
+app.use("/api/attendance", attendanceRoutes);
+
+app.use("/api/activities", activityRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

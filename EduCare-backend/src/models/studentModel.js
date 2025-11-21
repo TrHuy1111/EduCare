@@ -4,7 +4,6 @@ const studentSchema = new mongoose.Schema(
   {
     // 🧍‍♂️ Thông tin cơ bản
     name: { type: String, required: true },
-    class: { type: String },
     address: { type: String },
     dob: { type: Date },
     gender: { type: String, enum: ['male', 'female'] },

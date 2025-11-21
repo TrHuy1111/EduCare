@@ -180,5 +180,22 @@ export const getTeachers = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+// ✅ Lấy thông tin user hiện tại
+export const getCurrentUser = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-
+    res.status(200).json({
+      role: req.user.role,
+      name: req.user.name,
+      email: req.user.email,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message
+    });
+  }
+};

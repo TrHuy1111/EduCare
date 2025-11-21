@@ -6,6 +6,7 @@ import AppNavigator from './navigation/AppNavigator'; // ✅ thêm dòng này
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import auth from '@react-native-firebase/auth';
 import { ActivityIndicator, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler'; 
 
 export default function App() {
   const [initializing, setInitializing] = useState(true);
@@ -33,8 +34,10 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      {user ? <AppNavigator /> : <AuthNavigator />}  {/* ✅ thay HomeNavigator bằng AppNavigator */}
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>  
+      <NavigationContainer>
+        {user ? <AppNavigator /> : <AuthNavigator />}
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }

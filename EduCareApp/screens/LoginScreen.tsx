@@ -140,8 +140,9 @@ export default function LoginScreen() {
                       <Image source={require('../assets/ggLogo.png')} style={styles.googleIcon} />
                       <Text style={styles.googleText}>Login with Google</Text>
                   </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('PhoneAuth')}>
-            <Text style={styles.smallLink}>Login with Phone Number</Text>
+          <TouchableOpacity style={styles.googleBtn} onPress={() => navigation.navigate('PhoneAuth')}>
+            <Image source={require('../assets/phone.png')} style={styles.googleIcon} />
+            <Text style={styles.googleText}>Login with Phone</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -121,3 +121,4 @@ vendor/bundle/
 uploads/
 temp/
 secrets/
+EduCare-backend/serviceAccountKey.json
