@@ -84,7 +84,7 @@ export default function TeacherActivitiesScreen() {
       <Text style={styles.header}>Activities</Text>
 
       {/* CLASS DROPDOWN */}
-      <Text style={styles.label}>Chọn lớp</Text>
+      <Text style={styles.label}>Choose class</Text>
             <View style={styles.pickerBox}>
               <Picker
                 selectedValue={selectedClass}

@@ -85,3 +85,12 @@ export const getCurrentUserRole = async () => {
   return res.data.role;
 };
 
+export const fetchParents = async () => {
+  const token = await getToken();
+  const res = await axios.get(`${API_URL}/parents`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+

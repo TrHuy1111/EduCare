@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import AuthNavigator from './navigation/AuthNavigator';
-import AppNavigator from './navigation/AppNavigator'; // ✅ thêm dòng này
+import AppNavigator from './navigation/AppNavigator'; 
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import auth from '@react-native-firebase/auth';
 import { ActivityIndicator, View } from 'react-native';

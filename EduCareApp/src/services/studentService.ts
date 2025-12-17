@@ -1,3 +1,4 @@
+// EduCareApp/src/services/studentService.ts
 import axios from 'axios';
 import auth from '@react-native-firebase/auth';
 
@@ -37,4 +38,10 @@ export const updateStudent = async (id: string, data: any) => {
 export const deleteStudent = async (id: string) => {
   const config = await getAuthHeader();
   return axios.delete(`${API_URL}/${id}`, config);
+};
+
+// 🟢 Lấy thông tin học sinh của phụ huyn
+export const getMyChildren = async () => {
+  const config = await getAuthHeader();
+  return axios.get(`${API_URL}/my-children`, config);
 };

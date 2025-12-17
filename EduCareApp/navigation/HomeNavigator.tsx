@@ -5,6 +5,7 @@ import HomeScreen from '../screens/HomeScreen';
 
 export type HomeStackParamList = {
   Home: undefined;
+  AnnouncementList: undefined;
 };
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();

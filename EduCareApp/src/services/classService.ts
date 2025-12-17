@@ -61,3 +61,8 @@ export const deleteClass = async (classId: string) => {
   const config = await getAuthHeader();
   return axios.delete(`${API_URL}/${classId}`, config);
 };
+// 🗑️ Xóa giáo viên khỏi lớp
+export const removeTeacherFromClass = async (classId: string, teacherId: string) => {
+  const config = await getAuthHeader();
+  return axios.post(`${API_URL}/remove-teacher`, { classId, teacherId }, config);
+};

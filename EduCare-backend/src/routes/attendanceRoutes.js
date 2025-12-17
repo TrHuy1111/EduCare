@@ -6,6 +6,8 @@ import {
   getStudentsByClass,
   saveAttendance,
   getAttendance,
+  getAttendanceHistory,
+  getAttendanceStats
 } from "../controllers/attendanceController.js";
 
 const router = express.Router();
@@ -15,5 +17,6 @@ router.get("/classes", authMiddleware, getTeacherClasses);
 router.get("/students/:classId", authMiddleware, getStudentsByClass);
 router.post("/", authMiddleware, saveAttendance);
 router.get("/", authMiddleware, getAttendance);
-
+router.get("/history", authMiddleware,getAttendanceHistory);
+router.get("/stats", authMiddleware,getAttendanceStats);
 export default router;

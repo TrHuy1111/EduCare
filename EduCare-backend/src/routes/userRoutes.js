@@ -1,6 +1,6 @@
 // userRoutes.js
 import express from 'express';
-import { createOrUpdateUser, loginOrRegister,syncUser, updateUserRole,toggleUserStatus,getAllUsers,getTeachers } from '../controllers/userController.js';
+import { createOrUpdateUser, loginOrRegister,syncUser, updateUserRole,toggleUserStatus,getAllUsers,getTeachers, getParents } from '../controllers/userController.js';
 import { verifyFirebaseToken } from '../middlewares/authMiddleware.js';
 import { authMiddleware,isAdmin } from '../middlewares/auth.js';
 import { getCurrentUser } from "../controllers/userController.js";
@@ -20,4 +20,8 @@ router.put('/role', authMiddleware, isAdmin, updateUserRole);
 router.put('/status', verifyFirebaseToken, toggleUserStatus);
 // GET /api/user/teachers -> get all teachers
 router.get('/teachers', verifyFirebaseToken, getTeachers);
+// GET /api/user/parents -> get all parents
+router.get('/parents', verifyFirebaseToken, getParents);
+
+
 export default router;

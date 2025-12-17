@@ -1,3 +1,4 @@
+// EduCare-backend/src/models/classModel.js
 import mongoose from "mongoose";
 
 const classSchema = new mongoose.Schema(
@@ -9,6 +10,7 @@ const classSchema = new mongoose.Schema(
       required: true,
     },
     description: { type: String },
+    tuitionFee: { type: Number, required: true },
 
     // 🔗 Danh sách học sinh
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
@@ -18,6 +20,11 @@ const classSchema = new mongoose.Schema(
 
     // 👩‍🏫 Giáo viên chủ nhiệm
     homeroomTeacher: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+
+    // ⚠️ RULE CHO MỖI LỚP
+    minStudents: { type: Number, required: true },
+    maxStudents: { type: Number, required: true },
+    minTeachers: { type: Number, required: true },
 
     isActive: { type: Boolean, default: true },
   },

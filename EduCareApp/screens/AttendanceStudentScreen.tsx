@@ -1,3 +1,4 @@
+// AttendanceStudentScreen.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -8,6 +9,8 @@ import {
   ActivityIndicator,
   Image,
   Alert,
+  Modal,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -23,28 +26,43 @@ type Props = NativeStackScreenProps<
   "AttendanceStudentScreen"
 >;
 
-type Choice = "present" | "absent" | undefined;
+interface StudentChoice {
+  status?: "present" | "absent";
+  note?: string;
+}
 
 export default function AttendanceStudentScreen({ route, navigation }: Props) {
   const { classId, date, session } = route.params;
 
   const [students, setStudents] = useState<any[]>([]);
-  const [choices, setChoices] = useState<Record<string, Choice>>({});
+  const [choices, setChoices] = useState<Record<string, StudentChoice>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
+
+  // modal state for note
+  const [noteModal, setNoteModal] = useState({
+    open: false,
+    id: "",
+    text: "",
+  });
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
+        // students in class
         const sRes = await getStudentsByClass(classId);
         const list = sRes.data || [];
         setStudents(list);
 
-        const map: Record<string, Choice> = {};
-        list.forEach((s: any) => (map[s._id] = undefined));
+        // initial map with empty StudentChoice
+        const map: Record<string, StudentChoice> = {};
+        list.forEach((s: any) => {
+          map[s._id] = { status: undefined, note: "" };
+        });
 
+        // load existing attendance for date
         const attRes = await getAttendance(classId, date);
         const attData = attRes.data;
 
@@ -53,30 +71,47 @@ export default function AttendanceStudentScreen({ route, navigation }: Props) {
             const sid = r.student?._id || r.student;
             if (sid && r.session === session) {
               if (r.status === "present" || r.status === "absent") {
-                map[sid] = r.status;
+                map[sid] = { status: r.status, note: r.note || "" };
               }
             }
           });
         }
+
         setChoices(map);
         setInitialLoaded(true);
       } catch (err) {
+        console.log("load error", err);
         Alert.alert("Lỗi", "Không thể tải dữ liệu điểm danh.");
       } finally {
         setLoading(false);
       }
     };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // toggle functions updated to work with StudentChoice
   const togglePresent = (id: string) =>
-    setChoices((p) => ({ ...p, [id]: p[id] === "present" ? undefined : "present" }));
+  setChoices((p) => ({
+    ...p,
+    [id]: {
+      status: p[id]?.status === "present" ? undefined : "present",
+      note: "",   // luôn xoá note khi present
+    },
+  }));
 
   const toggleAbsent = (id: string) =>
-    setChoices((p) => ({ ...p, [id]: p[id] === "absent" ? undefined : "absent" }));
+  setChoices((p) => ({
+    ...p,
+    [id]: {
+      status: p[id]?.status === "absent" ? undefined : "absent",
+      note: p[id]?.note ?? "", // giữ note nếu đã có
+    },
+  }));
 
-  const presentCount = Object.values(choices).filter((c) => c === "present").length;
-  const absentCount = Object.values(choices).filter((c) => c === "absent").length;
+  // counts: check .status property
+  const presentCount = Object.values(choices).filter((c) => c.status === "present").length;
+  const absentCount = Object.values(choices).filter((c) => c.status === "absent").length;
 
   const handleSave = async () => {
     setSaving(true);
@@ -86,6 +121,7 @@ export default function AttendanceStudentScreen({ route, navigation }: Props) {
 
       const mergedRecords: any[] = [];
 
+      // keep other sessions' records
       if (existingDoc && Array.isArray(existingDoc.records)) {
         existingDoc.records.forEach((r: any) => {
           if (r.session !== session) {
@@ -99,14 +135,15 @@ export default function AttendanceStudentScreen({ route, navigation }: Props) {
         });
       }
 
+      // add current choices (only those with status)
       Object.keys(choices).forEach((sid) => {
         const st = choices[sid];
-        if (!st) return;
+        if (!st || !st.status) return;
         mergedRecords.push({
           student: sid,
           session,
-          status: st,
-          note: "",
+          status: st.status,
+          note: st.note || "",
         });
       });
 
@@ -114,6 +151,7 @@ export default function AttendanceStudentScreen({ route, navigation }: Props) {
       Alert.alert("✅", "Lưu điểm danh thành công");
       navigation.goBack();
     } catch (err) {
+      console.log("save error", err);
       Alert.alert("Lỗi", "Không thể lưu điểm danh.");
     } finally {
       setSaving(false);
@@ -122,7 +160,7 @@ export default function AttendanceStudentScreen({ route, navigation }: Props) {
 
   const renderStudent = ({ item }: any) => {
     const id = item._id;
-    const choice = choices[id];
+    const choice = choices[id] || { status: undefined, note: "" };
 
     return (
       <View style={styles.row}>
@@ -140,21 +178,35 @@ export default function AttendanceStudentScreen({ route, navigation }: Props) {
         </View>
 
         {/* Present */}
-        <TouchableOpacity
-          onPress={() => togglePresent(id)}
-          style={[styles.checkbox, choice === "present" && styles.checkboxPresent]}
-        >
-          {choice === "present" && <Text style={styles.tick}>✓</Text>}
-        </TouchableOpacity>
+  <TouchableOpacity
+    onPress={() => togglePresent(id)}
+    style={[styles.checkbox, choice.status === "present" && styles.checkboxPresent]}
+  >
+    {choice.status === "present" && <Text style={styles.tick}>✓</Text>}
+  </TouchableOpacity>
 
-        {/* Absent */}
-        <TouchableOpacity
-          onPress={() => toggleAbsent(id)}
-          style={[styles.checkbox, choice === "absent" && styles.checkboxAbsent]}
-        >
-          {choice === "absent" && <Text style={styles.tick}>✓</Text>}
-        </TouchableOpacity>
-      </View>
+  {/* Absent */}
+  <TouchableOpacity
+    onPress={() => toggleAbsent(id)}
+    style={[styles.checkbox, choice.status === "absent" && styles.checkboxAbsent]}
+  >
+    {choice.status === "absent" && <Text style={styles.tick}>✓</Text>}
+  </TouchableOpacity>
+
+  {/* Note */}
+  <View style={{ width: 40, alignItems: "center" }}>
+    {choice.status === "absent" && (
+      <TouchableOpacity
+        style={styles.noteBtn}
+        onPress={() =>
+          setNoteModal({ open: true, id, text: choice.note || "" })
+        }
+      >
+        <Text style={styles.noteBtnText}>📝</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+</View>
     );
   };
 
@@ -183,17 +235,11 @@ export default function AttendanceStudentScreen({ route, navigation }: Props) {
 
       {/* Header Row */}
       <View style={styles.headerRow}>
-  <Text style={[styles.headerText, { flex: 1.5 }]}>Student Name</Text>
-
-  <Text
-    style={[
-      styles.headerText,
-      { flex: 0.8, textAlign: "center", marginLeft: -4 }
-    ]}
-  >
-    Present    Absent
-  </Text>
-</View>
+        <Text style={[styles.headerText, { flex: 1 }]}>Student Name</Text>
+        <Text style={[styles.headerText, { flex: 0, textAlign: "center" }]}>Present</Text>
+        <Text style={[styles.headerText, { flex: 0, textAlign: "center" }]}>Absent</Text>
+        <Text style={[styles.headerText, { flex: 0, textAlign: "center" }]}>Note</Text>
+      </View>
 
       {/* List */}
       <FlatList
@@ -203,20 +249,60 @@ export default function AttendanceStudentScreen({ route, navigation }: Props) {
         contentContainerStyle={{ paddingBottom: 140 }}
       />
 
-      {/* Buttons */}
+      {/* Footer buttons */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.btnOutline} onPress={() => navigation.goBack()}>
           <Text style={styles.btnOutlineText}>Hủy</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.btnSave} onPress={handleSave} disabled={saving}>
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.btnSaveText}>Lưu</Text>
-          )}
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnSaveText}>Lưu</Text>}
         </TouchableOpacity>
       </View>
+
+      {/* Note Modal */}
+      <Modal visible={noteModal.open} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Lý do vắng mặt</Text>
+
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Nhập lý do..."
+              multiline
+              value={noteModal.text}
+              onChangeText={(t) => setNoteModal((p) => ({ ...p, text: t }))}
+            />
+
+            <View style={styles.modalBtns}>
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={() => setNoteModal({ open: false, id: "", text: "" })}
+              >
+                <Text>Hủy</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalSave}
+                onPress={() => {
+                  // save note to choices and ensure status is absent
+                  setChoices((p) => ({
+                    ...p,
+                    [noteModal.id]: {
+                      ...(p[noteModal.id] || {}),
+                      status: "absent",
+                      note: noteModal.text,
+                    },
+                  }));
+                  setNoteModal({ open: false, id: "", text: "" });
+                }}
+              >
+                <Text style={{ color: "#fff" }}>Lưu</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -301,18 +387,15 @@ const styles = StyleSheet.create({
   },
 
   checkbox: {
-    width: 24,
-    height: 24,
+    width: 36,
+    height: 36,
     borderWidth: 2,
     borderColor: "#6D6DC3",
-    borderRadius: 6,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    marginHorizontal: 10,
-    marginLeft: 6,      
-    marginRight: 20,    
+    marginHorizontal: 6,
     backgroundColor: "#fff",
-    
   },
   checkboxPresent: {
     backgroundColor: "#4ADE80",
@@ -322,7 +405,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#EF4444",
     borderColor: "#B91C1C",
   },
-  tick: { color: "#fff", fontWeight: "900", fontSize: 16 },
+  tick: { color: "#fff", fontWeight: "900", fontSize: 18 },
+
+  noteBtn: {
+  width: 28,
+  height: 28,
+  borderRadius: 6,
+  borderWidth: 1,
+  borderColor: "#CBD5E1",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "#fff",
+},
+noteBtnText: {
+  fontSize: 16,
+},
 
   footer: {
     position: "absolute",
@@ -353,4 +450,45 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   btnSaveText: { fontWeight: "700", color: "#fff" },
+
+  /* modal styles */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalBox: {
+    width: "86%",
+    backgroundColor: "#fff",
+    padding: 18,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 8,
+    color: "#064E3B",
+  },
+  modalInput: {
+    backgroundColor: "#F1F5F9",
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 80,
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+  },
+  modalBtns: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 14,
+  },
+  modalCancel: {
+    padding: 10,
+  },
+  modalSave: {
+    backgroundColor: "#10B981",
+    padding: 10,
+    borderRadius: 8,
+  },
 });

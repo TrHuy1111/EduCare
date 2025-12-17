@@ -180,6 +180,19 @@ export const getTeachers = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+// ✅ Lấy danh sách phụ huynh (role = parent)
+export const getParents = async (req, res) => {
+  try {
+    const parents = await User.find({ role: "parent", isActive: true })
+      .select("name phone email _id");  // chỉ lấy field cần thiết
+
+    res.status(200).json(parents);
+  } catch (err) {
+    console.error("❌ getParents error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 // ✅ Lấy thông tin user hiện tại
 export const getCurrentUser = async (req, res) => {
   try {
@@ -187,15 +200,21 @@ export const getCurrentUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const user = await User.findById(req.user._id)
+      .populate("children", "name classId"); // 👈 rất quan trọng
+
     res.status(200).json({
-      role: req.user.role,
-      name: req.user.name,
-      email: req.user.email,
+      _id: user._id,
+      role: user.role,
+      name: user.name,
+      email: user.email,
+      children: user.children, // 👈 TRẢ RA STUDENTS
     });
   } catch (err) {
-    return res.status(500).json({
+    res.status(500).json({
       message: "Server error",
-      error: err.message
+      error: err.message,
     });
   }
 };
+

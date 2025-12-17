@@ -42,6 +42,11 @@ export default function DashboardScreen() {
   { name: 'Student Management', image: require('../assets/icons/kid_management.png'), route: 'AdminStudentList', roles: ['admin'] },
   { name: 'Attendance', image: require('../assets/icons/attendance.png'), route: 'AttendanceHome', roles: ['teacher'] },
   { name: 'Activities', image: require('../assets/icons/calendar.png'), route: 'TeacherActivity', roles: ['teacher'] },
+  { name: 'Announcements', image: require('../assets/icons/anouncement.png'), route: role === 'admin' ? 'AdminAnnouncementList' : undefined, roles: ['admin'] },
+  { name: 'Tuition Management', image: require('../assets/icons/tuition.png'), route: role === 'admin' ? 'AdminFeeConfig' : undefined, roles: ['admin'] },
+  { name: 'Generate Tuition', image: require('../assets/icons/tuition.png'), route: role === 'admin' ? 'AdminTuitionGenerate' : undefined, roles: ['admin'] },
+  { name: 'View Invoices', image: require('../assets/icons/tuition.png'), route: role === 'admin' ? 'AdminTuitionList' : undefined, roles: ['admin'] },
+  { name: 'My Tuition', image: require('../assets/icons/tuition.png'), route: 'ParentTuition', roles: ['parent'] },
 ];
 
   // 🔥 Điều hướng theo role và nested navigator
@@ -53,8 +58,12 @@ export default function DashboardScreen() {
       return;
     }
 
-    if (['AdminStudentList', 'AdminUserList', 'AdminClassManagement'].includes(route)) {
+    if (['AdminStudentList', 'AdminUserList', 'AdminClassManagement','AdminAnnouncementList', 'AdminFeeConfig','AdminTuitionGenerate','AdminTuitionList', 'AdminTuitionDetail'].includes(route)) {
       navigation.navigate('AdminApp', { screen: route });
+      return;
+    }
+    if (['ParentTuition'].includes(route)) {
+      navigation.navigate('ParentApp', { screen: route });
       return;
     }
   };

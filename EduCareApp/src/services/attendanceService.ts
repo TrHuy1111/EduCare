@@ -50,3 +50,20 @@ export const saveAttendance = async (payload: {
   const config = await getAuthHeader();
   return axios.post(`${API_URL}`, payload, config);
 };
+// 4. Lấy lịch sử điểm danh theo ngày
+export const getAttendanceHistory = async (classId: string) => {
+  const config = await getAuthHeader();
+  return axios.get(`${API_URL}/history?classId=${classId}`, config);
+};
+// 5. Lấy thống kê điểm danh theo tháng
+export const getAttendanceStats = async (
+  classId: string,
+  month: number,
+  year: number
+) => {
+  const config = await getAuthHeader();
+  return axios.get(
+    `${API_URL}/stats?classId=${classId}&month=${month}&year=${year}`,
+    config
+  );
+};

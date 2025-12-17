@@ -1,3 +1,4 @@
+// EduCare-backend/src/models/studentModel.js
 import mongoose from 'mongoose';
 
 const studentSchema = new mongoose.Schema(
@@ -9,6 +10,12 @@ const studentSchema = new mongoose.Schema(
     gender: { type: String, enum: ['male', 'female'] },
     avatar: { type: String }, // link ảnh từ gallery / storage
 
+    joinedDate: { type: Date, required: true },
+    endDate: {
+      type: Date,
+      default: null // null = vẫn đang học
+    },
+    status: { type: String, enum: ["active", "inactive"], default: "active" },
     // 📏 Sức khỏe
     height: { type: Number }, // cm
     weight: { type: Number }, // kg
@@ -18,6 +25,8 @@ const studentSchema = new mongoose.Schema(
     fatherPhone: { type: String },
     motherName: { type: String },
     motherPhone: { type: String },
+    medicalNote: { type: String },
+    allergies: { type: [String], default: [] },
 
      // 👩‍🏫 Liên kết giáo viên chủ nhiệm
     teacher: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -26,8 +35,9 @@ const studentSchema = new mongoose.Schema(
     classId: { type: mongoose.Schema.Types.ObjectId, ref: "Class" },
 
     // 🔗 Liên kết phụ huynh
-    parents: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    parents: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" , required: true}],
   },
+  
   { timestamps: true }
 );
 

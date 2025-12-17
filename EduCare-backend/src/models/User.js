@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['parent','teacher','admin'], default: 'parent' },
   isActive: { type: Boolean, default: true }, // ✅ trạng thái hoạt động
   students: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
+  children: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
   
 }, { timestamps: true });
 

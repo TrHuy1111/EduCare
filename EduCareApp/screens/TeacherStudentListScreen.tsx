@@ -50,21 +50,47 @@ export default function TeacherStudentListScreen() {
   }
 
   if (filters.ageRange) {
-    data = data.filter((s) => s.ageRange === filters.ageRange);
+    data = data.filter((s) => {
+      const ageInMonths = getAgeInMonths(s.dob);
+      return (
+        ageInMonths >= filters.ageRange.minMonths &&
+        ageInMonths <= filters.ageRange.maxMonths
+      );
+    });
   }
 
-  if (filters.weightRange) {
-  data = data.filter((s) =>
-    s.weight >= filters.weightRange.min &&
-    s.weight <= filters.weightRange.max
+  if (filters.heightRange) {
+  data = data.filter(
+    (s) =>
+      s.height >= filters.heightRange.min &&
+      s.height <= filters.heightRange.max
   );
 }
 
+if (filters.weightRange) {
+  data = data.filter(
+    (s) =>
+      s.weight >= filters.weightRange.min &&
+      s.weight <= filters.weightRange.max
+  );
+}
+
+
   if (search) {
-    data = data.filter((s) =>
-      s.name.toLowerCase().includes(search.toLowerCase())
-    );
-  }
+  const lower = search.toLowerCase();
+
+  data = data.filter((s) => {
+    const nameMatch = s.name.toLowerCase().includes(lower);
+
+    const className = typeof s.classId === "string"
+      ? ""
+      : s.classId?.name?.toLowerCase() || "";
+
+    const classMatch = className.includes(lower);
+
+    return nameMatch || classMatch;
+  });
+}
 
   // 🔥 Ngăn loop vô hạn
   if (JSON.stringify(data) !== JSON.stringify(filtered)) {
@@ -103,6 +129,17 @@ export default function TeacherStudentListScreen() {
     </TouchableOpacity>
   );
 
+  const getAgeInMonths = (dob: string | Date) => {
+  const birth = new Date(dob);
+  const now = new Date();
+
+  let months =
+    (now.getFullYear() - birth.getFullYear()) * 12 +
+    (now.getMonth() - birth.getMonth());
+
+  return months < 0 ? 0 : months;
+};
+
   return (
     <View style={styles.container}>
       <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
@@ -132,19 +169,45 @@ export default function TeacherStudentListScreen() {
 
         {filters.gender && (
           <View style={styles.chip}>
-            <Text>{filters.gender}</Text>
+            <Text style={styles.chipText}>
+              {filters.gender === "male" ? "🧒 Boys" : "👧 Girls"}
+            </Text>
           </View>
         )}
-        {filters.ageRange && (
-          <View style={styles.chip}>
-            <Text>{filters.ageRange}</Text>
-          </View>
-        )}
+
         {filters.weightRange && (
           <View style={styles.chip}>
-            <Text>{filters.weightRange.label}</Text>
+            <Text style={styles.chipText}>
+              ⚖️ {filters.weightRange.min}–{filters.weightRange.max}kg
+            </Text>
           </View>
         )}
+
+        {filters.heightRange && (
+          <View style={styles.chip}>
+            <Text style={styles.chipText}>
+              📏 {filters.heightRange.min}–{filters.heightRange.max}cm
+            </Text>
+          </View>
+        )}
+
+        {filters.ageRange && (
+          <View style={styles.chip}>
+            <Text style={styles.chipText}>
+              🎂 {filters.ageRange.label}
+            </Text>
+          </View>
+        )}
+
+        {(filters.gender || filters.ageRange || filters.weightRange || filters.heightRange) && (
+          <TouchableOpacity
+            style={styles.clearBtn}
+            onPress={() => navigation.setParams({ filters: {} })}
+          >
+            <Text style={{ color: "white", fontWeight: "600" }}>Clear</Text>
+          </TouchableOpacity>
+        )}
+
       </View>
 
       <FlatList
@@ -191,13 +254,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
   },
+  clearBtn: {
+  backgroundColor: "#EF4444", // red but still pastel
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+  borderRadius: 12,
+  marginRight: 8,
+},
   chip: {
-    backgroundColor: "#8FEAD0",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginRight: 6,
+  backgroundColor: "#CFFAFE", // pastel blue
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 20,
+  marginRight: 6,
+  marginVertical: 4,
+  flexDirection: "row",
+  alignItems: "center",
+},
+
+  chipText: {
+    color: "#0F766E",
+    fontWeight: "600",
+    fontSize: 13,
   },
+
   card: {
     width: "48%",
     backgroundColor: "#D9FDF0",

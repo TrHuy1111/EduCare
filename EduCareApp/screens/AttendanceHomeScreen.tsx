@@ -112,6 +112,14 @@ export default function AttendanceHomeScreen() {
       <TouchableOpacity style={styles.btnStart} onPress={handleStart}>
         <Text style={styles.btnText}>Bắt đầu điểm danh</Text>
       </TouchableOpacity>
+
+      {/* HISTORY BUTTON */}
+      <TouchableOpacity
+        style={styles.btnHistory}
+        onPress={() => navigation.navigate("AttendanceHistory")}
+      >
+        <Text style={styles.btnHistoryText}>Xem lịch sử điểm danh</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -161,4 +169,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
   },
+  btnHistory: {
+  backgroundColor: "#3B82F6",
+  padding: 16,
+  borderRadius: 10,
+  alignItems: "center",
+  marginTop: 12,
+},
+btnHistoryText: {
+  color: "#fff",
+  fontSize: 16,
+  fontWeight: "700",
+},
+
 });

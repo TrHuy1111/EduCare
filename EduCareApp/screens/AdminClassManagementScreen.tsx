@@ -15,13 +15,24 @@ import {
   getAllClasses,
   createClass,
   assignTeacherToClass,
+  deleteClass,
+  removeTeacherFromClass,
 } from "../src/services/classService";
 import { fetchTeachers } from "../src/services/userService";
+
+// RULE giống backend
+const CLASS_RULES: any = {
+  infant: { minStudents: 5, maxStudents: 10, minTeachers: 2 },
+  toddler: { minStudents: 10, maxStudents: 15, minTeachers: 2 },
+  preK2: { minStudents: 15, maxStudents: 18, minTeachers: 1 },
+  preK3: { minStudents: 18, maxStudents: 22, minTeachers: 1 },
+  preK4: { minStudents: 20, maxStudents: 25, minTeachers: 1 },
+  preK5: { minStudents: 20, maxStudents: 30, minTeachers: 1 },
+};
 
 export default function AdminClassManagementScreen() {
   const [classes, setClasses] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
-  const [selectedClass, setSelectedClass] = useState<any>(null);
   const [selectedTeacher, setSelectedTeacher] = useState<{ [key: string]: string }>({});
   const [showModal, setShowModal] = useState(false);
   const [newClass, setNewClass] = useState({
@@ -30,7 +41,6 @@ export default function AdminClassManagementScreen() {
     description: "",
   });
 
-  // 🧠 Load dữ liệu lớp & giáo viên khi vào màn hình
   useEffect(() => {
     loadData();
   }, []);
@@ -47,94 +57,185 @@ export default function AdminClassManagementScreen() {
     }
   };
 
-  // ➕ Tạo lớp mới
+  // Tạo lớp mới
   const handleCreateClass = async () => {
-  if (!newClass.name.trim() || !newClass.level.trim()) {
-    Alert.alert("⚠️ Thiếu thông tin", "Vui lòng nhập đầy đủ TÊN LỚP và CẤP LỚP!");
-    return;
-  }
+    if (!newClass.name.trim() || !newClass.level.trim()) {
+      Alert.alert("⚠️ Thiếu thông tin", "Vui lòng nhập đầy đủ TÊN LỚP và CẤP LỚP!");
+      return;
+    }
 
-  try {
-    await createClass({
-      name: newClass.name.trim(),
-      level: newClass.level.trim(),
-      description: newClass.description.trim(),
-    });
-    Alert.alert("✅ Thành công", "Tạo lớp học thành công!");
-    setShowModal(false);
-    setNewClass({ name: "", level: "", description: "" });
-    loadData();
-  } catch (err: any) {
-    console.log("❌ Lỗi tạo lớp:", err.response?.data || err.message);
-    Alert.alert("❌ Lỗi", err.response?.data?.message || err.message);
-  }
-};
+    try {
+      await createClass({
+        name: newClass.name.trim(),
+        level: newClass.level.trim(),
+        description: newClass.description.trim(),
+      });
 
-  // 👩‍🏫 Gán giáo viên vào lớp
+      Alert.alert("✅ Thành công", "Tạo lớp học thành công!");
+      setShowModal(false);
+      setNewClass({ name: "", level: "", description: "" });
+      loadData();
+    } catch (err: any) {
+      console.log("❌ Lỗi tạo lớp:", err.response?.data || err.message);
+      Alert.alert("❌ Lỗi", err.response?.data?.message || err.message);
+    }
+  };
+
+  // Gán giáo viên vào lớp
   const handleAssignTeacher = async (classId: string) => {
-  const teacherId = selectedTeacher[classId];
-  if (!teacherId) {
-    Alert.alert("⚠️ Chưa chọn giáo viên");
-    return;
-  }
+    const teacherId = selectedTeacher[classId];
+    if (!teacherId) {
+      Alert.alert("⚠️ Chưa chọn giáo viên");
+      return;
+    }
 
-  try {
-    await assignTeacherToClass(classId, teacherId);
-    Alert.alert("✅ Thành công", "Đã gán giáo viên vào lớp!");
+    try {
+      await assignTeacherToClass(classId, teacherId);
+      Alert.alert("✅ Thành công", "Đã gán giáo viên vào lớp!");
 
-    setSelectedTeacher((prev) => ({ ...prev, [classId]: "" }));
-    loadData();
-  } catch (err: any) {
-    Alert.alert("❌ Lỗi", err.message);
-  }
+      setSelectedTeacher((prev) => ({ ...prev, [classId]: "" }));
+      loadData();
+    } catch (err: any) {
+      Alert.alert("❌ Lỗi", err.response?.data?.message || err.message);
+    }
+  };
+
+  // Xóa lớp
+  const handleDeleteClass = (classId: string) => {
+  Alert.alert(
+    "Xóa lớp?",
+    "Bạn có chắc muốn xóa lớp này? Thao tác không thể hoàn tác.",
+    [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteClass(classId);
+            Alert.alert("✔ Đã xóa lớp");
+            loadData();
+          } catch (err: any) {
+            Alert.alert("❌ Lỗi", err.response?.data?.message || err.message);
+          }
+        },
+      },
+    ]
+  );
+};
+// Remove teacher from class
+const handleRemoveTeacher = (classId: string, teacherId: string) => {
+  Alert.alert(
+    "Xóa giáo viên?",
+    "Giáo viên này sẽ không còn thuộc lớp.",
+    [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        onPress: async () => {
+          try {
+            await removeTeacherFromClass(classId, teacherId);
+            Alert.alert("✔ Đã xóa giáo viên khỏi lớp");
+            loadData();
+          } catch (err: any) {
+            Alert.alert("❌ Lỗi", err.response?.data?.message || err.message);
+          }
+        },
+      },
+    ]
+  );
 };
 
-  // 🧾 Render từng lớp trong danh sách
-  const renderClassItem = ({ item }: any) => (
-    <View style={styles.card}>
-      <Text style={styles.classTitle}>{item.name}</Text>
-      <Text style={styles.level}>Cấp độ: {item.level}</Text>
-      <Text style={styles.desc}>{item.description}</Text>
 
-      <Text style={styles.label}>Giáo viên hiện tại:</Text>
-      {item.teachers?.length > 0 ? (
-        item.teachers.map((t: any) => (
-          <Text key={t._id} style={styles.teacherItem}>
-            👩‍🏫 {t.name} ({t.email})
-          </Text>
-        ))
-      ) : (
-        <Text style={{ color: "#888" }}>Chưa có giáo viên</Text>
-      )}
 
-      <View style={styles.assignBox}>
-        <Picker
-          selectedValue={selectedTeacher[item._id] || ""}
-          onValueChange={(val) =>
-            setSelectedTeacher((prev) => ({ ...prev, [item._id]: val }))
-          }
-          style={{ flex: 1 }}
-        >
-          <Picker.Item label="-- Chọn giáo viên để thêm --" value="" />
-          {teachers.map((t) => (
-            <Picker.Item
-              key={t._id}
-              label={`${t.name} (${t.email})`}
-              value={t._id}
-            />
-          ))}
-        </Picker>
+  // UI cho từng lớp
+  const renderClassItem = ({ item }: any) => {
+    const teacherCount = item.teachers?.length || 0;
+    const studentCount = item.students?.length || 0;
 
+    const teacherOK = teacherCount >= item.minTeachers;
+    const studentOK = studentCount <= item.maxStudents;
+
+    return (
+      <View style={styles.card}>
         <TouchableOpacity
-          style={styles.assignBtn}
-          onPress={() => handleAssignTeacher(item._id)}
-        >
-          <Text style={styles.assignText}>➕</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  style={styles.deleteClassBtn}
+  onPress={() => handleDeleteClass(item._id)}
+>
+  <Text style={styles.deleteClassText}>🗑 Xóa lớp</Text>
+</TouchableOpacity>
+        <Text style={styles.classTitle}>{item.name}</Text>
+        <Text style={styles.level}>Cấp độ: {item.level}</Text>
+        <Text style={styles.desc}>{item.description}</Text>
 
+        {/* RULE status */}
+        <View style={{ marginTop: 8 }}>
+          <Text style={styles.ruleLabel}>👨‍🏫 Giáo viên:</Text>
+          <Text
+            style={[
+              styles.ruleValue,
+              { color: teacherCount >= item.minTeachers ? "#047857" : "#dc2626" },
+            ]}
+          >
+            {teacherCount} / {item.minTeachers} giáo viên (tối thiểu)
+          </Text>
+
+          <Text style={styles.ruleLabel}>👶 Số học sinh:</Text>
+            <Text
+              style={[
+                styles.ruleValue,
+                { color: studentCount <= item.maxStudents ? "#047857" : "#dc2626" },
+              ]}
+            >
+              {studentCount} / {item.maxStudents} học sinh (tối đa)
+            </Text>
+        </View>
+
+        {/* Danh sách giáo viên */}
+        <Text style={styles.label}>Giáo viên hiện tại:</Text>
+          {item.teachers.length === 0 ? (
+            <Text style={{ color: "#888", marginLeft: 10 }}>Chưa có giáo viên</Text>
+          ) : (
+            item.teachers.map((t: any) => (
+              <View key={t._id} style={styles.teacherRow}>
+                <Text style={styles.teacherItem}>👩‍🏫 {t.name} ({t.email})</Text>
+
+                <TouchableOpacity
+                  onPress={() => handleRemoveTeacher(item._id, t._id)}
+                >
+                  <Text style={styles.removeTeacherBtn}>❌</Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
+
+        {/* Assign teacher */}
+        <View style={styles.assignBox}>
+          <Picker
+            selectedValue={selectedTeacher[item._id] || ""}
+            onValueChange={(val) =>
+              setSelectedTeacher((prev) => ({ ...prev, [item._id]: val }))
+            }
+            style={{ flex: 1 }}
+          >
+            <Picker.Item label="-- Chọn giáo viên để thêm --" value="" />
+            {teachers.map((t) => (
+              <Picker.Item key={t._id} label={`${t.name} (${t.email})`} value={t._id} />
+            ))}
+          </Picker>
+
+          <TouchableOpacity
+            style={styles.assignBtn}
+            onPress={() => handleAssignTeacher(item._id)}
+          >
+            <Text style={styles.assignText}>➕</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  // ---------------- UI RETURN -------------------
   return (
     <View style={styles.container}>
       <Text style={styles.header}>🏫 Quản lý lớp học</Text>
@@ -150,17 +251,19 @@ export default function AdminClassManagementScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
       />
 
-      {/* 🔹 Modal thêm lớp */}
+      {/* Modal thêm lớp */}
       <Modal visible={showModal} animationType="slide" transparent>
         <View style={styles.modalBg}>
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>➕ Tạo lớp mới</Text>
+
             <TextInput
               placeholder="Tên lớp (VD: Mầm 1)"
               style={styles.input}
               value={newClass.name}
               onChangeText={(t) => setNewClass({ ...newClass, name: t })}
             />
+
             <Text style={styles.label}>Class Level</Text>
             <View style={styles.pickerWrapper}>
               <Picker
@@ -176,17 +279,37 @@ export default function AdminClassManagementScreen() {
                 <Picker.Item label="Pre-K 5 (5years)" value="preK5" />
               </Picker>
             </View>
+
+            {/* RULE PREVIEW */}
+            {newClass.level !== "" && (
+              <View style={styles.rulePreview}>
+                <Text style={styles.rulePreviewTitle}>📌 Quy định của lớp:</Text>
+                <Text>
+                  • Giáo viên tối thiểu:{" "}
+                  <Text style={{ fontWeight: "700" }}>
+                    {CLASS_RULES[newClass.level].minTeachers}
+                  </Text>
+                </Text>
+                <Text>
+                  • Sĩ số:{" "}
+                  <Text style={{ fontWeight: "700" }}>
+                    {CLASS_RULES[newClass.level].minStudents} – {CLASS_RULES[newClass.level].maxStudents} trẻ
+                  </Text>
+                </Text>
+              </View>
+            )}
+
             <TextInput
               placeholder="Mô tả"
               style={styles.input}
               value={newClass.description}
-              onChangeText={(t) =>
-                setNewClass({ ...newClass, description: t })
-              }
+              onChangeText={(t) => setNewClass({ ...newClass, description: t })}
             />
+
             <TouchableOpacity style={styles.saveBtn} onPress={handleCreateClass}>
               <Text style={styles.saveBtnText}>💾 Lưu</Text>
             </TouchableOpacity>
+
             <TouchableOpacity onPress={() => setShowModal(false)}>
               <Text style={{ color: "red", marginTop: 8 }}>Hủy</Text>
             </TouchableOpacity>
@@ -197,7 +320,7 @@ export default function AdminClassManagementScreen() {
   );
 }
 
-// 🎨 Styles
+// ---------------- STYLES -------------------
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#E6FDF3", padding: 16 },
   header: {
@@ -214,19 +337,26 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   addBtnText: { color: "#fff", fontWeight: "bold" },
+
   card: {
     backgroundColor: "#fff",
     padding: 14,
     borderRadius: 10,
     marginBottom: 10,
-    borderColor: "#ccc",
     borderWidth: 1,
+    borderColor: "#ccc",
   },
+
   classTitle: { fontSize: 18, fontWeight: "bold", color: "#064E3B" },
   level: { color: "#047857", fontWeight: "500", marginTop: 2 },
   desc: { color: "#666", marginVertical: 4 },
+
+  ruleLabel: { marginTop: 4, fontWeight: "600", color: "#064E3B" },
+  ruleValue: { marginLeft: 4, marginBottom: 4 },
+
   label: { marginTop: 6, fontWeight: "bold", color: "#064E3B" },
   teacherItem: { color: "#065F46", marginLeft: 8 },
+
   assignBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -236,6 +366,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#A7F3D0",
   },
+
   assignBtn: {
     backgroundColor: "#10B981",
     padding: 10,
@@ -243,6 +374,8 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 8,
   },
   assignText: { color: "#fff", fontWeight: "bold" },
+
+  /* modal */
   modalBg: {
     flex: 1,
     justifyContent: "center",
@@ -261,6 +394,7 @@ const styles = StyleSheet.create({
     color: "#064E3B",
     marginBottom: 12,
   },
+
   input: {
     backgroundColor: "#F9FAFB",
     borderWidth: 1,
@@ -269,6 +403,27 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 10,
   },
+
+  pickerWrapper: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    marginBottom: 12,
+  },
+
+  rulePreview: {
+    backgroundColor: "#ECFDF5",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  rulePreviewTitle: {
+    fontWeight: "700",
+    marginBottom: 4,
+    color: "#065F46",
+  },
+
   saveBtn: {
     backgroundColor: "#10B981",
     padding: 12,
@@ -276,11 +431,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveBtnText: { color: "#fff", fontWeight: "bold" },
-  pickerWrapper: {
-  backgroundColor: "#fff",
-  borderRadius: 10,
-  borderWidth: 1,
-  borderColor: "#ccc",
-  marginBottom: 12,
+  teacherRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  backgroundColor: "#F0FFF4",
+  paddingVertical: 6,
+  paddingHorizontal: 10,
+  borderRadius: 6,
+  marginTop: 4,
+},
+
+removeTeacherBtn: {
+  fontSize: 20,
+  color: "#dc2626",
+  paddingHorizontal: 8,
+},
+
+deleteClassBtn: {
+  backgroundColor: "#fee2e2",
+  padding: 8,
+  borderRadius: 8,
+  marginTop: 10,
+  alignItems: "center",
+},
+
+deleteClassText: {
+  color: "#dc2626",
+  fontWeight: "700",
 },
 });

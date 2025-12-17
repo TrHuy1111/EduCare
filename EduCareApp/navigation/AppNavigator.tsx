@@ -19,7 +19,6 @@ export default function AppNavigator() {
       <Stack.Screen name="ParentApp" component={ParentNavigator} />
       
       
-      
     </Stack.Navigator>
   );
 }
