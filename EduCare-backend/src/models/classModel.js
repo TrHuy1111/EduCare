@@ -10,6 +10,7 @@ const classSchema = new mongoose.Schema(
       required: true,
     },
     description: { type: String },
+    cameraUrl: { type: String, default: null },
     tuitionFee: { type: Number, required: true },
 
     // 🔗 Danh sách học sinh

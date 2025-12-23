@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Image, View, Text } from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import AccountStack from "./AccountStack";
 
 const Tab = createBottomTabNavigator();
 
@@ -24,7 +25,7 @@ export default function BottomTabs() {
             case 'Dashboard':
               iconPath = require('../assets/icons/dashboard.png');
               break;
-            case 'Settings':
+            case 'Account':
               iconPath = require('../assets/icons/setting.png');
               break;
           }
@@ -45,12 +46,9 @@ export default function BottomTabs() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen
-        name="Settings"
-        component={() => (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <Text>⚙️ Settings Screen</Text>
-          </View>
-        )}
+        name="Account"
+        component={AccountStack}
+        options={{ title: "Account" }}
       />
     </Tab.Navigator>
   );

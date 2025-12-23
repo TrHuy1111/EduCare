@@ -74,6 +74,9 @@ export default function AnnouncementListScreen() {
             ? new Date(item.startTime).toLocaleDateString("vi-VN")
             : "Chưa rõ"}
         </Text>
+        <Text style={styles.meta}>
+            ❤️ {item.likesCount || 0} lượt thích
+        </Text>
         </View>
     </TouchableOpacity>
   );

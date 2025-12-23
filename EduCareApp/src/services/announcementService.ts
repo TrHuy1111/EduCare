@@ -48,7 +48,7 @@ export const getAnnouncementById = async (id: string) => {
 };
 
 // POST /api/announcements/:id/like
-export const likeAnnouncement = async (id: string) => {
+export const toggleLikeAnnouncement = async (id: string) => {
   const config = await getAuthHeader(); 
   return axios.post(`${API_URL}/${id}/like`, null, config);
 };

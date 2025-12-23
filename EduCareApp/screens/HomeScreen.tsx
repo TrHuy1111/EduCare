@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState , useCallback} from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import auth from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import {
   getAllAnnouncements,
   BASE_URL,
@@ -22,9 +22,11 @@ export default function HomeScreen() {
   const navigation: any = useNavigation();
   const [events, setEvents] = useState<any[]>([]);
 
-  useEffect(() => {
+  useFocusEffect(
+  useCallback(() => {
     loadEvents();
-  }, []);
+  }, [])
+);
 
   const loadEvents = async () => {
     try {
@@ -32,15 +34,6 @@ export default function HomeScreen() {
       setEvents(res.data.data || []);
     } catch (e: any) {
       console.log("❌ Load events error:", e.message);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await auth().signOut();
-      await GoogleSignin.signOut();
-    } catch (e: any) {
-      Alert.alert("Error", e.message);
     }
   };
 
@@ -63,29 +56,10 @@ export default function HomeScreen() {
           </Text>
           <Text style={styles.subText}>EduCare App</Text>
         </View>
-
-        <TouchableOpacity onPress={handleLogout}>
-          <Text style={styles.logout}>Đăng xuất</Text>
-        </TouchableOpacity>
       </View>
 
       {/* ===== QUICK ACTIONS ===== */}
-      <Text style={styles.blockTitle}>Tính năng yêu thích</Text>
-
-      <View style={styles.quickRow}>
-        <QuickItem icon="📅" label="Thời khóa biểu" />
-        <QuickItem icon="✅" label="Điểm danh" />
-        <QuickItem icon="💰" label="Học phí" />
-        <QuickItem icon="📊" label="Điểm" />
-      </View>
-
-      <View style={styles.quickRow}>
-        <QuickItem icon="📝" label="Lịch thi" />
-        <QuickItem icon="📣" label="Thông báo" />
-        <QuickItem icon="🎧" label="Góp ý" />
-        <QuickItem icon="➕" label="Xem thêm" />
-      </View>
-
+      
       {/* ===== EVENTS ===== */}
       <View style={styles.sectionRow}>
         <Text style={styles.sectionTitle}>Sự kiện sắp tới</Text>
@@ -121,7 +95,7 @@ export default function HomeScreen() {
                 {item.title}
               </Text>
 
-              <Text style={styles.eventMeta}>
+              <Text style={styles.eventMeta} numberOfLines={1}>
                 📍 {item.location || "Đang cập nhật"}
               </Text>
 
@@ -131,6 +105,11 @@ export default function HomeScreen() {
                   ? new Date(item.startTime).toLocaleDateString("vi-VN")
                   : "Chưa rõ"}
               </Text>
+
+              {/* ❤️ LIKE FLOAT */}
+              <View style={styles.likeBadge}>
+                <Text style={styles.likeText}>❤️ {item.likesCount || 0}</Text>
+              </View>
             </View>
           </TouchableOpacity>
         )}
@@ -227,6 +206,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
     overflow: "hidden",
     elevation: 3,
+    height: 280, 
   },
 
   eventImage: {
@@ -236,6 +216,10 @@ const styles = StyleSheet.create({
 
   eventBody: {
     padding: 12,
+    flex: 1, 
+    position: "relative",
+    justifyContent: 'flex-start', 
+    paddingBottom: 40, 
   },
 
   eventTitle: {
@@ -248,4 +232,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#555",
   },
+  eventFooter: {
+  flexDirection: "row",
+  justifyContent: "flex-end",
+  marginTop: 8,
+  },
+
+  likeText: {
+  fontSize: 13,
+  color: "#DC2626",
+  fontWeight: "700",
+  },
+
+likeBadge: {
+    position: "absolute",
+    right: 12,
+    bottom: 12, 
+    backgroundColor: "#FEE2E2",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    elevation: 2, 
+  },
+  
 });

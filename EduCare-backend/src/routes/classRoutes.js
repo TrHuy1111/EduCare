@@ -9,10 +9,13 @@ import {
   deleteClass,
   getClassesForTeacher,
   removeTeacherFromClass,
+  updateClassCamera,
+  getClassCamera
 } from "../controllers/classController.js";
 
 import { verifyFirebaseToken } from "../middlewares/authMiddleware.js";
 import { checkRole } from "../middlewares/checkRole.js";
+import { uploadCamera } from "../middlewares/uploadCamera.js";
 
 const router = express.Router();
 
@@ -28,4 +31,7 @@ router.post("/enroll-student", verifyFirebaseToken, checkRole(["admin"]), enroll
 router.post("/remove-teacher", verifyFirebaseToken, checkRole(["admin"]), removeTeacherFromClass);
 // 🧑‍🏫 Lấy lớp học của giáo viên
 router.get("/my-classes", verifyFirebaseToken, checkRole(["teacher"]), getClassesForTeacher);
+
+router.put("/:id/camera", verifyFirebaseToken, checkRole(["admin"]), uploadCamera.single("camera"), updateClassCamera);
+router.get("/:id/camera", verifyFirebaseToken, getClassCamera);
 export default router;

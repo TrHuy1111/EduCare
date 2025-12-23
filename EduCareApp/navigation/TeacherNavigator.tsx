@@ -12,6 +12,9 @@ import EditActivitiesScreen from '../screens/EditActivitiesScreen';
 import AttendanceHistoryScreen from '../screens/AttendanceHistoryScreen';
 import AttendanceDetailScreen from '../screens/AttendanceDetailScreen';
 import AnnouncementListScreen from '../screens/AnnouncementListScreen';
+import TeacherFeedbackScreen from '../screens/TeacherFeedbackScreen';
+import TeacherStatsScreen from '../screens/TeacherStatsScreen';
+
 const Stack = createNativeStackNavigator<TeacherStackParamList>();
 export type TeacherStackParamList = {
   BottomTabs: undefined;
@@ -39,6 +42,8 @@ export type TeacherStackParamList = {
     date: string;
   };
   AnnouncementList: undefined;
+  TeacherFeedBackScreen: undefined;
+  TeacherStatsScreen: undefined;
 
 };
 
@@ -56,6 +61,8 @@ export default function TeacherNavigator() {
       <Stack.Screen name="AttendanceHistory" component={AttendanceHistoryScreen} />
       <Stack.Screen name="AttendanceDetailScreen" component={AttendanceDetailScreen} />
       <Stack.Screen name="AnnouncementList" component={AnnouncementListScreen} />
+      <Stack.Screen name="TeacherFeedBackScreen" component={TeacherFeedbackScreen} />
+      <Stack.Screen name="TeacherStatsScreen" component={TeacherStatsScreen} />
     </Stack.Navigator>
   );
 }

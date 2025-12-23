@@ -10,7 +10,7 @@ export default function DashboardScreen() {
   const [userName, setUserName] = useState('');
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
+  
   // 🧩 Lấy user name từ Firebase
   useEffect(() => {
     const user = auth().currentUser;
@@ -47,28 +47,34 @@ export default function DashboardScreen() {
   { name: 'Generate Tuition', image: require('../assets/icons/tuition.png'), route: role === 'admin' ? 'AdminTuitionGenerate' : undefined, roles: ['admin'] },
   { name: 'View Invoices', image: require('../assets/icons/tuition.png'), route: role === 'admin' ? 'AdminTuitionList' : undefined, roles: ['admin'] },
   { name: 'My Tuition', image: require('../assets/icons/tuition.png'), route: 'ParentTuition', roles: ['parent'] },
+  { name: 'Camera Management', image: require('../assets/camera.png'), route: 'AdminCamera', roles: ['admin'] },
+  { name: 'Class Camera', image: require('../assets/camera.png'), route: 'ParentCamera', roles: ['parent'] },
+  { name: 'Activities', image: require('../assets/icons/calendar.png'), route: 'ParentActivities', roles: ['parent'] },
+  { name: 'Feedback', image: require('../assets/icons/feedback.png'), route: 'TeacherFeedBackScreen', roles: ['teacher'] },
+  { name: 'FeedBack', image: require('../assets/icons/feedback.png'), route: 'ParentFeedBackScreen', roles: ['parent'] },
+  { name: 'Statistics', image: require('../assets/icons/feedback.png'), route: 'TeacherStatsScreen', roles: ['teacher'] },
 ];
 
   // 🔥 Điều hướng theo role và nested navigator
   const handleNavigation = (route?: string) => {
     if (!route) return;
 
-    if (['TeacherStudentList', 'StudentFilter', 'StudentProfile', 'AttendanceHome','TeacherActivity'].includes(route)) {
+    if (['TeacherStudentList', 'StudentFilter', 'StudentProfile', 'AttendanceHome','TeacherActivity', 'TeacherFeedBackScreen', 'TeacherStatsScreen'].includes(route)) {
       navigation.navigate('TeacherApp', { screen: route });
       return;
     }
 
-    if (['AdminStudentList', 'AdminUserList', 'AdminClassManagement','AdminAnnouncementList', 'AdminFeeConfig','AdminTuitionGenerate','AdminTuitionList', 'AdminTuitionDetail'].includes(route)) {
+    if (['AdminStudentList', 'AdminUserList', 'AdminClassManagement','AdminAnnouncementList', 'AdminFeeConfig','AdminTuitionGenerate','AdminTuitionList', 'AdminTuitionDetail', 'AdminCamera'].includes(route)) {
       navigation.navigate('AdminApp', { screen: route });
       return;
     }
-    if (['ParentTuition'].includes(route)) {
+    if (['ParentTuition', 'ParentCamera', 'ParentActivities', 'ParentFeedBackScreen'].includes(route)) {
       navigation.navigate('ParentApp', { screen: route });
       return;
     }
   };
 
-  // ⏳ UI chờ role load xong
+  // wait for role to be fetched
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

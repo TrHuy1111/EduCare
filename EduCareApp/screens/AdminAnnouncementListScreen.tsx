@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState , useCallback} from "react";
 import {
   View,
   Text,
@@ -8,15 +8,18 @@ import {
   Image,
   StyleSheet,
 } from "react-native";
-
+import { useFocusEffect } from "@react-navigation/native";
 import { getAllAnnouncements, deleteAnnouncement } from "../src/services/announcementService";
 import { BASE_URL } from "../src/services/announcementService";
+
 export default function AdminAnnouncementListScreen({ navigation }: any) {
   const [list, setList] = useState<any[]>([]);
 
-  useEffect(() => {
+  useFocusEffect(
+  useCallback(() => {
     load();
-  }, []);
+  }, [])
+);
 
   const load = async () => {
     try {
@@ -43,8 +46,15 @@ export default function AdminAnnouncementListScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Quản lý thông báo</Text>
-
+        <View style={{ height: 50, justifyContent: 'center', marginBottom: 10 }}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <Image
+                source={require('../assets/icons/back.png')} 
+                style={styles.backIcon}
+              />
+            </TouchableOpacity>
+            <Text style={styles.header}>Quản lý thông báo</Text>
+        </View>
       <TouchableOpacity
         style={styles.addBtn}
         onPress={() => navigation.navigate("AdminAnnouncementCreate")}
@@ -97,7 +107,7 @@ export default function AdminAnnouncementListScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#E6FDF3", padding: 16 },
-  header: { fontSize: 22, fontWeight: "700", color: "#064E3B", marginBottom: 14 },
+  header: { fontSize: 22, fontWeight: "700", color: "#064E3B",  textAlign: 'center' },
   addBtn: {
     backgroundColor: "#10B981",
     padding: 12,
@@ -129,5 +139,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: "48%",
     alignItems: "center",
+  },
+  backBtn: {
+  position: 'absolute',
+  left: 0,
+  paddingHorizontal: 10,
+  paddingVertical: 6,
+  },
+  backIcon: {
+    width: 28,
+    height: 28,
+    resizeMode: 'contain',
   },
 });

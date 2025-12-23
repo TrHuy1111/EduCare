@@ -2,7 +2,8 @@
 import axios from "axios";
 import auth from "@react-native-firebase/auth";
 
-const API_URL = "http://192.168.118.1:5000/api/class"; // ⚠️ Đổi IP theo backend của bạn
+const API_URL = "http://192.168.118.1:5000/api/class"; 
+export const BASE_URL = "http://192.168.118.1:5000"; 
 
 // 🟢 Helper: Lấy Firebase token để xác thực
 const getAuthHeader = async () => {
@@ -65,4 +66,32 @@ export const deleteClass = async (classId: string) => {
 export const removeTeacherFromClass = async (classId: string, teacherId: string) => {
   const config = await getAuthHeader();
   return axios.post(`${API_URL}/remove-teacher`, { classId, teacherId }, config);
+};
+
+export const uploadClassCamera = async (
+  classId: string,
+  videoFile: any
+) => {
+  const user = auth().currentUser;
+  if (!user) throw new Error("User not logged in");
+  const idToken = await user.getIdToken(true);
+
+  const formData = new FormData();
+  formData.append("camera", videoFile); // 👈 key = camera (trùng multer)
+
+  return axios.put(
+    `${API_URL}/${classId}/camera`,
+    formData,
+    {
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+}
+
+export const getClassCamera = async (classId: string) => {
+  const config = await getAuthHeader();
+  return axios.get(`${API_URL}/${classId}/camera`, config);
 };

@@ -56,7 +56,7 @@ export default function AttendanceHistoryScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>📖 Attendance History</Text>
-
+      
       {/* CLASS PICKER */}
       <Text style={styles.label}>Chọn lớp</Text>
       <View style={styles.pickerBox}>

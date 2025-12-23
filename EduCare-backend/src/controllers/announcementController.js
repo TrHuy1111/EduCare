@@ -1,5 +1,5 @@
-import Announcement from "../models/AnnouncementModel.js";
-// 🟢 Create
+import Announcement from "../models/announcementModel.js";
+// Create
 export const createAnnouncement = async (req, res) => {
   try {
     //console.log("BODY:", req.body);
@@ -32,7 +32,7 @@ export const createAnnouncement = async (req, res) => {
 };
 
 
-// 🟢 Trang chủ: sự kiện sắp tới 
+//  Trang chủ: sự kiện sắp tới 
 export const getUpcomingAnnouncements = async (req, res) => {
   const now = new Date();
 
@@ -45,19 +45,19 @@ export const getUpcomingAnnouncements = async (req, res) => {
   res.json({ data: list });
 };
 
-// 🟢 List tất cả
+//  List tất cả
 export const getAllAnnouncements = async (req, res) => {
   const list = await Announcement.find().sort({ createdAt: -1 });
   res.json({ data: list });
 };
 
-// 🟢 Detail
+//  Detail
 export const getAnnouncementById = async (req, res) => {
   const a = await Announcement.findById(req.params.id);
   res.json({ data: a });
 };
 
-// 🟡 Update
+// Update
 export const updateAnnouncement = async (req, res) => {
   try {
     const { title, content, location, startTime, endTime } = req.body;
@@ -94,7 +94,7 @@ export const deleteAnnouncement = async (req, res) => {
   res.json({ message: "Deleted" });
 };
 
-// ❤️ Like
+// Like
 export const likeAnnouncement = async (req, res) => {
   console.log("LIKE USER:", req.user?.email);
   console.log("LIKE ID:", req.params.id);
@@ -104,4 +104,38 @@ export const likeAnnouncement = async (req, res) => {
     { new: true }
   );
   res.json({ data: a });
+};
+// Toggle Like/Unlike
+export const toggleLikeAnnouncement = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { id } = req.params;
+
+    const announcement = await Announcement.findById(id);
+    if (!announcement) {
+      return res.status(404).json({ message: "Announcement not found" });
+    }
+
+    const isLiked = announcement.likedBy.includes(userId);
+
+    if (isLiked) {
+      // UNLIKE
+      announcement.likedBy.pull(userId);
+    } else {
+      // LIKE
+      announcement.likedBy.push(userId);
+    }
+
+    await announcement.save();
+
+    res.json({
+      data: {
+        likesCount: announcement.likedBy.length,
+        liked: !isLiked,
+      },
+    });
+  } catch (err) {
+    console.error("❌ Toggle like error:", err);
+    res.status(500).json({ error: err.message });
+  }
 };

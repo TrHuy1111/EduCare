@@ -10,43 +10,58 @@ import {
   Alert,
   Share,
 } from "react-native";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { useRoute } from "@react-navigation/native";
+import auth from "@react-native-firebase/auth";
+
 import {
   getAnnouncementById,
-  likeAnnouncement,
+  toggleLikeAnnouncement,
   BASE_URL,
 } from "../src/services/announcementService";
 
 export default function AnnouncementDetailScreen() {
   const route: any = useRoute();
-  const navigation: any = useNavigation();
   const { id } = route.params;
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [liking, setLiking] = useState(false);
 
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+
   useEffect(() => {
     loadDetail();
   }, []);
 
+  // ===== LOAD DETAIL =====
   const loadDetail = async () => {
     try {
       const res = await getAnnouncementById(id);
-      setData(res.data.data);
+      const a = res.data.data;
+
+      setData(a);
+      setLikesCount(a.likesCount || 0);
+
+      const uid = auth().currentUser?.uid;
+      setLiked(a.likedBy?.some((u: any) => u.uid === uid));
     } catch (err) {
-      Alert.alert("Lỗi", "Không tải được chi tiết sự kiện");
+      Alert.alert("Lỗi", "Không thể tải chi tiết sự kiện");
     } finally {
       setLoading(false);
     }
   };
 
+  // ===== LIKE / UNLIKE =====
   const handleLike = async () => {
     if (liking) return;
+
     try {
       setLiking(true);
-      const res = await likeAnnouncement(id);
-      setData(res.data.data);
+      const res = await toggleLikeAnnouncement(data._id);
+
+      setLiked(res.data.data.liked);
+      setLikesCount(res.data.data.likesCount);
     } catch (err) {
       Alert.alert("Lỗi", "Không thể like sự kiện");
     } finally {
@@ -54,6 +69,7 @@ export default function AnnouncementDetailScreen() {
     }
   };
 
+  // ===== SHARE =====
   const handleShare = async () => {
     try {
       await Share.share({
@@ -64,6 +80,7 @@ export default function AnnouncementDetailScreen() {
     }
   };
 
+  // ===== LOADING =====
   if (loading) {
     return (
       <View style={styles.loadingBox}>
@@ -80,6 +97,7 @@ export default function AnnouncementDetailScreen() {
     );
   }
 
+  // ===== UI =====
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* IMAGE */}
@@ -94,7 +112,6 @@ export default function AnnouncementDetailScreen() {
         </View>
       )}
 
-      {/* CONTENT */}
       <View style={styles.body}>
         {/* TITLE */}
         <Text style={styles.title}>{data.title}</Text>
@@ -110,25 +127,24 @@ export default function AnnouncementDetailScreen() {
           </Text>
         </View>
 
-        {/* DESCRIPTION */}
+        {/* CONTENT */}
         <Text style={styles.content}>{data.content}</Text>
 
         {/* ACTIONS */}
         <View style={styles.actionRow}>
           <TouchableOpacity
-            style={styles.likeBtn}
+            style={[styles.likeBtn, liked && styles.liked]}
             onPress={handleLike}
-            activeOpacity={0.8}
+            disabled={liking}
           >
-            <Text style={styles.actionText}>
-              ❤️ {data.likes || 0}
+            <Text style={styles.likeText}>
+              {liked ? "💔 Bỏ thích" : "❤️ Thích"} ({likesCount})
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.shareBtn}
             onPress={handleShare}
-            activeOpacity={0.8}
           >
             <Text style={styles.actionText}>🔗 Chia sẻ</Text>
           </TouchableOpacity>
@@ -137,6 +153,8 @@ export default function AnnouncementDetailScreen() {
     </ScrollView>
   );
 }
+
+// ===== STYLES =====
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -195,17 +213,28 @@ const styles = StyleSheet.create({
   },
 
   likeBtn: {
-    backgroundColor: "#ECFDF5",
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    backgroundColor: "#E5E7EB",
+    padding: 14,
     borderRadius: 12,
+    alignItems: "center",
+    flex: 1,
+    marginRight: 10,
+  },
+
+  liked: {
+    backgroundColor: "#FECACA",
+  },
+
+  likeText: {
+    fontSize: 16,
+    fontWeight: "700",
   },
 
   shareBtn: {
     backgroundColor: "#EFF6FF",
-    paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 12,
+    justifyContent: "center",
   },
 
   actionText: {

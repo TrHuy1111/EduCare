@@ -15,6 +15,8 @@ import AdminTuitionListScreen from '../screens/AdminTuitionListScreen';
 import AdminTuitionDetailScreen from '../screens/AdminTuitionDetailScreen';
 import AnnouncementListScreen from '../screens/AnnouncementListScreen';
 import AnnouncementDetailScreen from '../screens/AnnouncementDetailScreen';
+import AdminCameraScreen from '../screens/AdminCameraScreen';
+
 // 🧩 1️⃣ Định nghĩa type cho toàn bộ stack này
 export type AdminStackParamList = {
   BottomTabs: undefined;
@@ -33,6 +35,7 @@ export type AdminStackParamList = {
   };
   AnnouncementList: undefined;
   AnnouncementDetail: { announcementId: string };
+  AdminCamera : undefined;
 };
 
 // 🧩 2️⃣ Tạo Stack có type
@@ -56,6 +59,8 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminTuitionDetail" component={AdminTuitionDetailScreen} />
       <Stack.Screen name="AnnouncementList" component={AnnouncementListScreen} />
       <Stack.Screen name="AnnouncementDetail" component={AnnouncementDetailScreen} />
+      <Stack.Screen name="AdminCamera" component={AdminCameraScreen} />
+      
     </Stack.Navigator>
   );
 }

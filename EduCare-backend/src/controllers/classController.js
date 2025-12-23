@@ -5,7 +5,7 @@ import Student from "../models/studentModel.js";
 
 
 const CLASS_RULES = {
-  infant:   { minStudents: 1,  maxStudents: 10, minTeachers: 2 },
+  infant:   { minStudents: 1, maxStudents: 10, minTeachers: 2 },
   toddler:  { minStudents: 1, maxStudents: 15, minTeachers: 2 },
   preK2:    { minStudents: 1, maxStudents: 18, minTeachers: 2 },
   preK3:    { minStudents: 1, maxStudents: 22, minTeachers: 2 },
@@ -178,5 +178,60 @@ export const removeTeacherFromClass = async (req, res) => {
     res.status(200).json({ message: "Xóa giáo viên khỏi lớp thành công", class: klass });
   } catch (err) {
     res.status(500).json({ message: "Lỗi server", error: err.message });
+  }
+};
+// Cập nhật camera của lớp
+export const updateClassCamera = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        message: "Camera video is required",
+      });
+    }
+
+    const cameraUrl = `/uploads/cameras/${req.file.filename}`;
+
+    const updatedClass = await Class.findByIdAndUpdate(
+      req.params.id,
+      { cameraUrl },
+      { new: true }
+    );
+
+    if (!updatedClass) {
+      return res.status(404).json({ message: "Class not found" });
+    }
+
+    res.status(200).json({
+      message: "Camera updated successfully",
+      data: updatedClass,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const getClassCamera = async (req, res) => {
+  try {
+    if (req.user.role !== "parent") {
+      return res.status(403).json({
+        message: "Only parent can view camera",
+      });
+    }
+
+    const classData = await Class.findById(req.params.id)
+      .select("cameraUrl name");
+
+    if (!classData || !classData.cameraUrl) {
+      return res.status(404).json({
+        message: "Camera not available",
+      });
+    }
+
+    res.status(200).json({
+      cameraUrl: classData.cameraUrl,
+      className: classData.name,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

@@ -207,6 +207,8 @@ export const getCurrentUser = async (req, res) => {
       _id: user._id,
       role: user.role,
       name: user.name,
+      phone: user.phone,
+      image: user.image,
       email: user.email,
       children: user.children, // 👈 TRẢ RA STUDENTS
     });
@@ -218,3 +220,53 @@ export const getCurrentUser = async (req, res) => {
   }
 };
 
+export const updateUserProfile = async (req, res) => {
+  try {
+    const { name, phone } = req.body;
+
+    const updateData = {};
+
+    if (name) updateData.name = name;
+    if (phone) updateData.phone = phone;
+
+    if (req.file) {
+      updateData.image = `/uploads/users/${req.file.filename}`;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      updateData,
+      { new: true }
+    ).select("_id uid name email phone role image");
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      user,
+    });
+  } catch (err) {
+    console.error("❌ updateUserProfile error:", err);
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
+  }
+};
+
+export const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select(
+      "_id uid name email phone role image"
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ user });
+  } catch (err) {
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
+  }
+};

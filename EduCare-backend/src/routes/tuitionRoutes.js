@@ -7,7 +7,7 @@ import {
   payInvoice,
   getInvoiceDetail
 } from "../controllers/tuitionController.js";
-
+import { checkRole } from "../middlewares/checkRole.js";
 const router = express.Router();
 
 // 🔥 ADMIN
@@ -18,7 +18,7 @@ router.get("/month", authMiddleware, getInvoicesByMonth);
 router.get("/student/:studentId", authMiddleware, getInvoicesByStudent);
 
 // 💰 PAYMENT
-router.patch("/pay/:invoiceId", authMiddleware, payInvoice);
+router.patch("/pay/:invoiceId", authMiddleware, checkRole(['admin']), payInvoice);
 
 //
 router.get("/detail/:invoiceId", authMiddleware, getInvoiceDetail);

@@ -1,5 +1,5 @@
 // AdminTuitionListScreen.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { getInvoicesByMonth } from "../src/services/tuitionService";
 
 export default function AdminTuitionListScreen() {
@@ -32,9 +32,11 @@ export default function AdminTuitionListScreen() {
     }
   };
 
-  useEffect(() => {
-    loadInvoices();
-  }, [month, year]);
+  useFocusEffect(
+    useCallback(() => {
+      loadInvoices();
+    }, [month, year])
+  );
 
   const renderItem = ({ item }: any) => (
     <TouchableOpacity

@@ -10,6 +10,7 @@ import activityRoutes from './routes/activityRoutes.js';
 import announcementRoutes from './routes/announcementRoutes.js';
 import tuitionRoutes from './routes/tuitionRoutes.js';
 import feeConfigRoutes from './routes/feeConfigRoutes.js';
+import feedbackRoutes from './routes/feedbackRoutes.js';
 import path from 'path';
 dotenv.config();
 
@@ -40,5 +41,7 @@ app.use("/api/announcements", announcementRoutes);
 app.use("/api/tuition", tuitionRoutes);
 
 app.use("/api/fee-config", feeConfigRoutes);
+
+app.use("/api/feedback", feedbackRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

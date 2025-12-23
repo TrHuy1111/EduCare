@@ -3,6 +3,7 @@ import axios from 'axios';
 import auth from '@react-native-firebase/auth';
 
 const API_URL = 'http://192.168.118.1:5000/api/user';
+export const BASE_URL = "http://192.168.118.1:5000"; // for image paths
 
 export const syncUserToBackend = async () => {
   try {
@@ -92,5 +93,24 @@ export const fetchParents = async () => {
   });
   return res.data;
 };
+
+export const getUserProfile = async () => {
+  const token = await getToken();
+  const res = await axios.get(`${API_URL}/current`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data.user;
+};
+
+export const updateUserProfile = async (formData: FormData) => {
+  const token = await getToken();
+  return axios.put(`${API_URL}/profile`, formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
 
 

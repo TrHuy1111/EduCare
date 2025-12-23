@@ -7,7 +7,7 @@ import {
   getAnnouncementById,
   updateAnnouncement,
   deleteAnnouncement,
-  likeAnnouncement,
+  toggleLikeAnnouncement,
 } from "../controllers/announcementController.js";
 import { verifyFirebaseToken } from "../middlewares/authMiddleware.js";
 import upload from "../middlewares/upload.js";
@@ -22,6 +22,10 @@ router.get("/:id", getAnnouncementById);
 router.put("/:id", verifyFirebaseToken, upload.single("image"), updateAnnouncement);
 router.delete("/:id",verifyFirebaseToken, deleteAnnouncement);
 
-router.post("/:id/like", likeAnnouncement);
+router.post(
+  "/:id/like",
+  verifyFirebaseToken,
+  toggleLikeAnnouncement
+);
 
 export default router;
