@@ -49,6 +49,6 @@ router.get(
   "/stats",
   verifyFirebaseToken,
   checkRole(["teacher"]),
-  getTeacherRewardStats
+  getFeedbackStats
 );
 export default router;

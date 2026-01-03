@@ -2,7 +2,6 @@
 import admin from '../firebaseAdmin.js';
 import User from '../models/User.js';
 
-// ✅ Kiểm tra token Firebase gửi từ frontend lên
 export const authMiddleware = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -13,7 +12,7 @@ export const authMiddleware = async (req, res, next) => {
     const userInDB = await User.findOne({ uid: decoded.uid });
     if (!userInDB) return res.status(404).json({ message: 'User not found in DB' });
 
-    req.user = userInDB;       // 🔥 dùng ObjectId thay cho Firebase UID
+    req.user = userInDB;     
     req.user.role = userInDB.role;
 
     next();
@@ -22,8 +21,6 @@ export const authMiddleware = async (req, res, next) => {
   }
 };
 
-
-// ✅ Chỉ cho Admin thực thi
 export const isAdmin = (req, res, next) => {
   if (req.user?.role !== 'admin') {
     return res.status(403).json({ message: 'Access denied: Admin only' });

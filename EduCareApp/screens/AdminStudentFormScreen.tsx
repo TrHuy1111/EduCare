@@ -155,10 +155,10 @@ export default function AdminStudentFormScreen() {
       return;
     }
 
-    if (form.joinedDate > new Date()) {
-      Alert.alert("Lỗi", "Ngày nhập học không hợp lệ");
-      return;
-    }
+    //if (form.joinedDate > new Date()) {
+      //Alert.alert("Lỗi", "Ngày nhập học không hợp lệ");
+      //return;
+   // }
 
     // End date validation
     if (form.endDate && form.endDate < form.joinedDate) {

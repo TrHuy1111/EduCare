@@ -114,6 +114,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-auth'
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
+        implementation project(':react-native-svg')
     } else {
         implementation jscFlavor
     }

@@ -1,5 +1,5 @@
 import Feedback from "../models/Feedback.js";
-
+import mongoose from "mongoose";
 /**
  * 🧑‍🏫 Teacher tạo hoặc cập nhật feedback
  */
@@ -114,21 +114,21 @@ export const getFeedbackStats = async (req, res) => {
   try {
     const { classId, from, to } = req.query;
 
+    console.log("📊 STATS PARAMS:", { classId, from, to });
+
     if (!classId || !from || !to) {
-      return res.status(400).json({
-        message: "Missing classId / from / to",
-      });
+      return res.status(400).json({ message: "Missing params" });
     }
 
-    const matchStage = {
-      classId: new mongoose.Types.ObjectId(classId),
-      date: { $gte: from, $lte: to },
-      reward: { $ne: "none" },
-    };
-
-    // ================= SUMMARY =================
+    /** ================= SUMMARY ================= */
     const summaryAgg = await Feedback.aggregate([
-      { $match: matchStage },
+      {
+        $match: {
+          classId: new mongoose.Types.ObjectId(classId),
+          date: { $gte: from, $lte: to },
+          reward: { $ne: "none" },
+        },
+      },
       {
         $group: {
           _id: "$reward",
@@ -137,63 +137,71 @@ export const getFeedbackStats = async (req, res) => {
       },
     ]);
 
-    const summary = {
-      star: 0,
-      flower: 0,
-      badge: 0,
-    };
+    console.log("📊 RAW SUMMARY AGG:", summaryAgg);
 
+    const summary = { star: 0, flower: 0, badge: 0 };
     summaryAgg.forEach((i) => {
       summary[i._id] = i.count;
     });
 
-    // ================= RANKING =================
+    /** ================= RANKING ================= */
     const rankingAgg = await Feedback.aggregate([
-      { $match: matchStage },
+      {
+        $match: {
+          classId: new mongoose.Types.ObjectId(classId),
+          date: { $gte: from, $lte: to },
+          reward: { $ne: "none" }, // Chỉ lấy cái nào có thưởng
+        },
+      },
+      // 1. Gom nhóm theo Student + Reward
       {
         $group: {
-          _id: "$studentId",
-          star: {
-            $sum: { $cond: [{ $eq: ["$reward", "star"] }, 1, 0] },
-          },
-          flower: {
-            $sum: { $cond: [{ $eq: ["$reward", "flower"] }, 1, 0] },
-          },
-          badge: {
-            $sum: { $cond: [{ $eq: ["$reward", "badge"] }, 1, 0] },
-          },
+          _id: { studentId: "$studentId", reward: "$reward" },
+          count: { $sum: 1 },
         },
       },
+      // 2. Gom nhóm lại theo Student để tạo mảng rewards
       {
-        $addFields: {
-          total: { $add: ["$star", "$flower", "$badge"] },
+        $group: {
+          _id: "$_id.studentId",
+          rewards: {
+            $push: {
+              reward: "$_id.reward",
+              count: "$count",
+            },
+          },
+          totalCount: { $sum: "$count" } // 🔥 Thêm dòng này để dễ sort ranking
         },
       },
-      { $sort: { total: -1 } },
+      // 3. Join với bảng students
       {
         $lookup: {
-          from: "students",
+          from: "students", // ⚠️ LƯU Ý: Đảm bảo tên collection trong MongoDB là "students"
           localField: "_id",
           foreignField: "_id",
           as: "student",
         },
       },
-      { $unwind: "$student" },
-      {
-        $project: {
-          studentId: "$_id",
-          name: "$student.name",
-          star: 1,
-          flower: 1,
-          badge: 1,
-          total: 1,
-        },
-      },
+      { $unwind: "$student" }, // Nếu không tìm thấy student, dòng này sẽ loại bỏ record đó.
+      { $sort: { totalCount: -1 } } // 🔥 Sắp xếp học sinh có nhiều huy hiệu nhất lên đầu
     ]);
+
+    console.log("📊 RAW RANKING AGG:", rankingAgg);
+
+    const ranking = rankingAgg.map((r) => {
+      const base = { star: 0, flower: 0, badge: 0 };
+      r.rewards.forEach((rw) => (base[rw.reward] = rw.count));
+
+      return {
+        studentId: r._id,
+        name: r.student.name,
+        ...base,
+      };
+    });
 
     res.status(200).json({
       summary,
-      ranking: rankingAgg,
+      ranking,
     });
   } catch (err) {
     console.error("❌ getFeedbackStats error:", err);
