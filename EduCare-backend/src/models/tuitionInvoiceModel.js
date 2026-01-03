@@ -12,9 +12,12 @@ const tuitionInvoiceSchema = new mongoose.Schema(
     classId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Class",
-      required: true,
+      default: null
     },
-
+    level: { type: String, required: true },
+    isTrial: { type: Boolean, default: false },
+    studyDays: { type: Number, default: 0 },
+    
     month: { type: Number, required: true },
     year: { type: Number, required: true },
 

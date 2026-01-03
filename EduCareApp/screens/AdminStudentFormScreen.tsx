@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
   Image,
+  Switch
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import RNFS from "react-native-fs";
@@ -24,10 +25,19 @@ import {
 } from "../src/services/studentService";
 import { getAllClasses, enrollStudentToClass } from "../src/services/classService";
 
+const EDUCATION_LEVELS = [
+  { label: "Infant (0-12 tháng)", value: "infant" },
+  { label: "Toddler (1-2 tuổi)", value: "toddler" },
+  { label: "PreK-2 (2-3 tuổi)", value: "preK2" },
+  { label: "PreK-3 (3-4 tuổi)", value: "preK3" },
+  { label: "PreK-4 (4-5 tuổi)", value: "preK4" },
+  { label: "PreK-5 (5-6 tuổi)", value: "preK5" },
+];
 export default function AdminStudentFormScreen() {
   const [form, setForm] = useState({
     name: "",
-    classId: "",
+    targetLevel: "infant",
+    isTrial: false,
     joinedDate: new Date(),
     endDate: null as Date | null,
     address: "",
@@ -42,14 +52,11 @@ export default function AdminStudentFormScreen() {
     motherId: "",
     motherName: "",
     motherPhone: "",
-    teacher: "",
   });
 
   const [showDobPicker, setShowDobPicker] = useState(false);
   const [showJoinedPicker, setShowJoinedPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
-  const [classes, setClasses] = useState<any[]>([]);
-  const [teachers, setTeachers] = useState<any[]>([]);
   const [parents, setParents] = useState<any[]>([]);
   
   const route = useRoute();
@@ -58,14 +65,8 @@ export default function AdminStudentFormScreen() {
 
   useEffect(() => {
     loadParents();
-    loadClasses();
-  }, []);
-
-  useEffect(() => {
-    if (classes.length > 0 && editId) {
-      loadStudent();
-    }
-  }, [classes, editId]);
+    if (editId) loadStudent();
+  }, [editId]);
 
   const loadParents = async () => {
     try {
@@ -76,41 +77,15 @@ export default function AdminStudentFormScreen() {
     }
   };
 
-  const loadClasses = async () => {
-    try {
-      const res = await getAllClasses();
-      setClasses(res.data);
-    } catch (err: any) {
-      console.log("❌ Lỗi tải lớp:", err.message);
-    }
-  };
-
-  const handleClassChange = (classId: string) => {
-    if (classId === "none") {
-      setForm({ ...form, classId: "", teacher: "" });
-      setTeachers([]);
-      return;
-    }
-
-    const selected = classes.find((c) => c._id === classId);
-    setForm({ ...form, classId, teacher: "" });
-    setTeachers(selected?.teachers || []);
-  };
 
   const loadStudent = async () => {
     try {
       const res = await getStudentById(editId);
       const s = res.data;
-
-      if (s.classId) {
-        const selected = classes.find((c) => c._id === s.classId || c._id === s.classId._id);
-        if (selected) setTeachers(selected.teachers);
-      }
-
       setForm({
         ...s,
-        classId: typeof s.classId === "string" ? s.classId : s.classId?._id ?? "",
-        teacher: typeof s.teacher === "string" ? s.teacher : s.teacher?._id ?? "",
+        targetLevel: s.targetLevel || "infant", // Load level
+        isTrial: s.isTrial || false,            // Load trial status
         dob: s.dob ? new Date(s.dob) : new Date(),
         joinedDate: s.joinedDate ? new Date(s.joinedDate) : new Date(),
         endDate: s.endDate ? new Date(s.endDate) : null,
@@ -144,10 +119,7 @@ export default function AdminStudentFormScreen() {
       return;
     }
 
-    if (form.classId === "" || form.classId === "none") {
-      Alert.alert("Lỗi", "Bạn phải chọn lớp cho học sinh");
-      return;
-    }
+    if (!form.targetLevel) return Alert.alert("Lỗi", "Chọn khối học (Level)");
 
     // Joined date validation
     if (!form.joinedDate) {
@@ -186,19 +158,6 @@ export default function AdminStudentFormScreen() {
       preK5: { min: 5, max: 6 },
     };
 
-    const selectedClass = classes.find((c) => c._id === form.classId);
-    if (selectedClass) {
-      const rule = classRules[selectedClass.level];
-
-      if (age < rule.min || age >= rule.max) {
-        Alert.alert(
-          "Sai độ tuổi",
-          `Lớp ${selectedClass.name} (${selectedClass.level}) yêu cầu tuổi từ ${rule.min} đến dưới ${rule.max}.`
-        );
-        return;
-      }
-    }
-
     try {
       const payload = {
         ...form,
@@ -209,16 +168,11 @@ export default function AdminStudentFormScreen() {
 
       if (editId) {
         await updateStudent(editId, payload);
-        if (payload.classId) await enrollStudentToClass(payload.classId, editId);
-        Alert.alert("✅ Thành công", "Cập nhật học sinh thành công!");
+        Alert.alert("✅ Thành công", "Cập nhật hồ sơ thành công!");
       } else {
-        const res = await createStudent(payload);
-        const studentId = res.data.student._id;
-
-        if (payload.classId) await enrollStudentToClass(payload.classId, studentId);
-        Alert.alert("✅ Thành công", "Thêm học sinh mới thành công!");
+        await createStudent(payload);
+        Alert.alert("✅ Thành công", "Tiếp nhận học sinh mới thành công!");
       }
-
       navigation.goBack();
     } catch (err: any) {
       Alert.alert("❌ Lỗi", err.message);
@@ -229,8 +183,7 @@ export default function AdminStudentFormScreen() {
     const now = new Date();
     let years = now.getFullYear() - dob.getFullYear();
     let months = now.getMonth() - dob.getMonth();
-
-    if (months < 0) {
+     if (months < 0) {
       years--;
       months += 12;
     }
@@ -272,65 +225,57 @@ export default function AdminStudentFormScreen() {
         onChangeText={(t) => setForm({ ...form, name: t })}
       />
 
-      {/* Class Picker */}
-      <Text style={styles.label}>Class</Text>
+      <Text style={styles.label}>Đăng ký Khối (Level)</Text>
       <View style={styles.pickerWrapper}>
         <Picker
-          selectedValue={form.classId || "none"}
-          onValueChange={(value) => handleClassChange(value as string)}
+          selectedValue={form.targetLevel}
+          onValueChange={(val) => setForm({ ...form, targetLevel: val })}
         >
-          <Picker.Item label="-- Chọn lớp --" value="none" />
-          {classes.map((c) => (
-            <Picker.Item key={c._id} label={`${c.name} (${c.level})`} value={c._id} />
+          {EDUCATION_LEVELS.map((l) => (
+            <Picker.Item key={l.value} label={l.label} value={l.value} />
           ))}
         </Picker>
       </View>
+
+      <View style={styles.rowSwitch}>
+        <Text style={styles.labelSwitch}>Chế độ Học thử (Trial Mode)</Text>
+        <Switch
+          value={form.isTrial}
+          onValueChange={(val) => setForm({ ...form, isTrial: val })}
+          trackColor={{ false: "#767577", true: "#10B981" }}
+        />
+      </View>
+      {form.isTrial && (
+        <Text style={{color: '#F59E0B', marginBottom: 10, fontSize: 12}}>
+          * Học phí sẽ được tính theo ngày hoặc biểu phí học thử.
+        </Text>
+      )}
       
       {/* Joined Date */}
-      <Text style={styles.label}>Ngày nhập học</Text>
-
-        <TouchableOpacity
-          style={styles.dateBtn}
-          onPress={() => setShowJoinedPicker(true)}
-        >
-          <Text style={styles.dateText}>
-            Joined: {form.joinedDate.toLocaleDateString("vi-VN")}
-          </Text>
-        </TouchableOpacity>
-
-        {showJoinedPicker && (
-          <DateTimePicker
-            value={form.joinedDate}
-            mode="date"
-            onChange={(e, date) => {
-              setShowJoinedPicker(false);
-              if (date) setForm({ ...form, joinedDate: date });
-            }}
-          />
-        )}
+      <Text style={styles.label}>Ngày bắt đầu học</Text>
+      <TouchableOpacity style={styles.dateBtn} onPress={() => setShowJoinedPicker(true)}>
+        <Text style={styles.dateText}>{form.joinedDate.toLocaleDateString("vi-VN")}</Text>
+      </TouchableOpacity>
+      {showJoinedPicker && (
+        <DateTimePicker
+          value={form.joinedDate}
+          mode="date"
+          onChange={(e, d) => { setShowJoinedPicker(false); if(d) setForm({...form, joinedDate: d}) }}
+        />
+      )}
 
       {/* End Date */}
-      <Text style={styles.label}>Ngày kết thúc học (nếu có)</Text>
-
-      <TouchableOpacity
-        style={styles.dateBtn}
-        onPress={() => setShowEndPicker(true)}
-      >
+      <Text style={styles.label}>Ngày kết thúc (Dự kiến/Hết hạn học thử)</Text>
+      <TouchableOpacity style={styles.dateBtn} onPress={() => setShowEndPicker(true)}>
         <Text style={styles.dateText}>
-          {form.endDate
-            ? `Kết thúc: ${form.endDate.toLocaleDateString("vi-VN")}`
-            : "Đang học (chưa có ngày kết thúc)"}
+          {form.endDate ? form.endDate.toLocaleDateString("vi-VN") : "Không thời hạn"}
         </Text>
       </TouchableOpacity>
-
       {showEndPicker && (
         <DateTimePicker
           value={form.endDate || new Date()}
           mode="date"
-          onChange={(e, date) => {
-            setShowEndPicker(false);
-            if (date) setForm({ ...form, endDate: date });
-          }}
+          onChange={(e, d) => { setShowEndPicker(false); if(d) setForm({...form, endDate: d}) }}
         />
       )}
 
@@ -345,26 +290,6 @@ export default function AdminStudentFormScreen() {
           </Text>
         </TouchableOpacity>
       )}
-
-      {/* Teacher Picker */}
-      <Text style={styles.label}>Head Teacher</Text>
-      <View style={styles.pickerWrapper}>
-        <Picker
-          selectedValue={form.teacher || "none"}
-          enabled={teachers.length > 0}
-          onValueChange={(value) =>
-            setForm({ ...form, teacher: value === "none" ? "" : value })
-          }
-        >
-          <Picker.Item
-            label={teachers.length === 0 ? "Không có giáo viên" : "-- Chọn giáo viên --"}
-            value="none"
-          />
-          {teachers.map((t) => (
-            <Picker.Item key={t._id} label={`${t.name} (${t.email})`} value={t._id} />
-          ))}
-        </Picker>
-      </View>
 
       {/* Address */}
       <Text style={styles.label}>Address</Text>
@@ -573,4 +498,16 @@ const styles = StyleSheet.create({
   fontSize: 15,
   fontWeight: "500",
 },
+rowSwitch: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ccc'
+  },
+  labelSwitch: { fontWeight: "600", fontSize: 14 }
 });

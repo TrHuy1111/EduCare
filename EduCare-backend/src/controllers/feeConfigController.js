@@ -2,11 +2,12 @@
 import FeeConfig from "../models/feeConfigModel.js";
 
 export const upsertFeeConfig = async (req, res) => {
-  const { month, year, levelFees, extraFees } = req.body;
+  // Thêm trialDiscountPercent vào destructuring
+  const { month, year, levelFees, extraFees, trialDiscountPercent } = req.body;
 
   if (!Array.isArray(levelFees) || levelFees.length === 0) {
     return res.status(400).json({ message: "Phải cấu hình học phí theo level" });
-    }
+  }
 
   if (!month || !year) {
     return res.status(400).json({ message: "Month & year required" });
@@ -18,7 +19,8 @@ export const upsertFeeConfig = async (req, res) => {
       month,
       year,
       levelFees,
-      extraFees
+      extraFees,
+      trialDiscountPercent: Number(trialDiscountPercent) || 0 // Lưu %
     },
     { upsert: true, new: true }
   );

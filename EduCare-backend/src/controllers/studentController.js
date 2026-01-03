@@ -6,27 +6,29 @@ import User from "../models/User.js";
 // 🟢 CREATE STUDENT
 export const createStudent = async (req, res) => {
   try {
-    const { parents } = req.body;
+    const { parents, targetLevel, joinedDate } = req.body;
 
     if (!parents || parents.length === 0) {
       return res.status(400).json({ message: "Student must have at least 1 parent" });
+    }
+    if (!targetLevel) {
+      return res.status(400).json({ message: "Must select a Grade Level (Khối học)" });
     }
 
     // Tạo student
     const student = await Student.create(req.body);
 
-    // 🔗 Gán student vào User.children
+    // 🔗 Gán student vào User.children (Phụ huynh vẫn cần thấy con mình)
     await User.updateMany(
       { _id: { $in: parents } },
       { $push: { children: student._id } }
     );
 
-    res.status(201).json({ message: "Student created", student });
+    res.status(201).json({ message: "Student profile created", student });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 // 🟡 UPDATE STUDENT (handle parent change)
 export const updateStudent = async (req, res) => {
@@ -156,6 +158,26 @@ export const deleteStudent = async (req, res) => {
 
     res.json({ message: "Student deleted" });
 
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getStudentsForEnrollment = async (req, res) => {
+  try {
+    const { level } = req.query; // Ví dụ: ?level=infant
+
+    if (!level) {
+      return res.status(400).json({ message: "Level is required" });
+    }
+
+    const students = await Student.find({
+      status: "active",
+      targetLevel: level,
+      $or: [{ classId: null }, { classId: { $exists: false } }] // Chưa có lớp
+    }).select("name dob gender parents isTrial avatar");
+
+    res.json(students);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

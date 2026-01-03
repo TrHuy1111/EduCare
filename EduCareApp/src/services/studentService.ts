@@ -45,3 +45,8 @@ export const getMyChildren = async () => {
   const config = await getAuthHeader();
   return axios.get(`${API_URL}/my-children`, config);
 };
+
+export const getWaitingStudents = async (level: string) => {
+  const config = await getAuthHeader();
+  return axios.get(`${API_URL}/waiting-enrollment?level=${level}`, config);
+};

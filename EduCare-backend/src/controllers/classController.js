@@ -47,7 +47,7 @@ export const getAllClasses = async (req, res) => {
   try {
     const classes = await Class.find()
       .populate("teachers", "name email")
-      .populate("students", "name")
+      .populate("students", "name avatar gender")
       .populate("homeroomTeacher", "name email");
 
     res.status(200).json(classes);
@@ -108,7 +108,7 @@ export const enrollStudentToClass = async (req, res) => {
       classId,
       { $addToSet: { students: studentId } },
       { new: true }
-    ).populate("students", "name");
+    ).populate("students", "name avatar gender");
 
     await Student.findByIdAndUpdate(studentId, { classId });
 
@@ -119,6 +119,31 @@ export const enrollStudentToClass = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi thêm học sinh", error: err.message });
+  }
+};
+
+export const removeStudentFromClass = async (req, res) => {
+  try {
+    const { classId, studentId } = req.body;
+
+    // 1. Cập nhật Class: Pull studentId ra khỏi mảng students
+    const updatedClass = await Class.findByIdAndUpdate(
+      classId,
+      { $pull: { students: studentId } },
+      { new: true }
+    ).populate("students", "name avatar gender");
+
+    if (!updatedClass) return res.status(404).json({ message: "Class not found" });
+
+    // 2. Cập nhật Student: Set classId = null
+    await Student.findByIdAndUpdate(studentId, { classId: null });
+
+    res.status(200).json({
+      message: "Đã xóa học sinh khỏi lớp",
+      class: updatedClass
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server", error: err.message });
   }
 };
 

@@ -15,6 +15,8 @@ const feeConfigSchema = new mongoose.Schema({
     }
   ],
 
+  trialDiscountPercent: { type: Number, default: 0 },
+
   extraFees: [
     {
       key: String,

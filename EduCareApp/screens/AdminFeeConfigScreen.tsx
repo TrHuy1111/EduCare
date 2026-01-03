@@ -26,6 +26,7 @@ type ExtraFee = {
 export default function AdminFeeConfigScreen() {
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [trialDiscount, setTrialDiscount] = useState<string>("0");
 
   const [levelFees, setLevelFees] = useState<LevelFee[]>(
     LEVELS.map((l) => ({ level: l, amount: "" }))
@@ -54,16 +55,19 @@ export default function AdminFeeConfigScreen() {
         setIsExisting(true);
         setLevelFees(normalizeLevelFees(res.data.levelFees || []));
         setExtraFees(res.data.extraFees || []);
+        setTrialDiscount(res.data.trialDiscountPercent?.toString() || "0");
       } else {
         setIsExisting(false);
         setLevelFees(LEVELS.map((l) => ({ level: l, amount: "" })));
         setExtraFees([]);
+        setTrialDiscount("0");
       }
     } catch (err) {
       // chưa có config
       setIsExisting(false);
       setLevelFees(LEVELS.map((l) => ({ level: l, amount: "" })));
       setExtraFees([]);
+      setTrialDiscount("0");
     }
   };
 
@@ -89,7 +93,10 @@ export default function AdminFeeConfigScreen() {
         return Alert.alert("Lỗi", "Phí khác không hợp lệ");
       }
     }
-
+    const discountNum = parseFloat(trialDiscount);
+    if (isNaN(discountNum) || discountNum < 0 || discountNum > 100) {
+      return Alert.alert("Lỗi", "% Giảm giá học thử không hợp lệ (0-100)");
+    }
     try {
       setLoading(true);
 
@@ -105,6 +112,7 @@ export default function AdminFeeConfigScreen() {
           name: f.name,
           amount: Number(f.amount),
         })),
+        trialDiscountPercent: discountNum,
       };
 
       await upsertFeeConfig(payload);
@@ -164,6 +172,22 @@ export default function AdminFeeConfigScreen() {
           />
         </View>
       ))}
+
+      <Text style={styles.section}>Cấu hình Học thử (Trial)</Text>
+      <View style={styles.row}>
+        <Text style={{ width: 150, alignSelf: 'center' }}>Giảm giá (%):</Text>
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          placeholder="Ví dụ: 20"
+          value={trialDiscount}
+          onChangeText={setTrialDiscount}
+        />
+        <Text style={{ alignSelf: 'center', fontWeight: 'bold' }}>%</Text>
+      </View>
+      <Text style={{ fontSize: 12, color: '#666', marginBottom: 10, fontStyle: 'italic' }}>
+        * Học sinh có trạng thái "Trial" sẽ được giảm {trialDiscount}% trên học phí cơ bản.
+      </Text>
 
       {/* EXTRA FEES */}
       <Text style={styles.section}>Phí khác</Text>

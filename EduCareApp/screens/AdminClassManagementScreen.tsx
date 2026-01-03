@@ -19,7 +19,7 @@ import {
   removeTeacherFromClass,
 } from "../src/services/classService";
 import { fetchTeachers } from "../src/services/userService";
-
+import ClassStudentManagerModal from "./components/ClassStudentManagerModal";
 // RULE giống backend
 const CLASS_RULES: any = {
   infant: { minStudents: 5, maxStudents: 10, minTeachers: 2 },
@@ -40,6 +40,10 @@ export default function AdminClassManagementScreen() {
     level: "",
     description: "",
   });
+  
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const currentClass = classes.find((c) => c._id === selectedClassId) || null;
+  const showStudentModal = !!selectedClassId;
 
   useEffect(() => {
     loadData();
@@ -146,7 +150,10 @@ const handleRemoveTeacher = (classId: string, teacherId: string) => {
   );
 };
 
-
+const handleOpenStudentManager = (item: any) => {
+    setSelectedClassId(item._id); 
+  };
+  
 
   // UI cho từng lớp
   const renderClassItem = ({ item }: any) => {
@@ -159,11 +166,11 @@ const handleRemoveTeacher = (classId: string, teacherId: string) => {
     return (
       <View style={styles.card}>
         <TouchableOpacity
-  style={styles.deleteClassBtn}
-  onPress={() => handleDeleteClass(item._id)}
->
-  <Text style={styles.deleteClassText}>🗑 Xóa lớp</Text>
-</TouchableOpacity>
+          style={styles.deleteClassBtn}
+          onPress={() => handleDeleteClass(item._id)}
+        >
+          <Text style={styles.deleteClassText}>🗑 Xóa lớp</Text>
+        </TouchableOpacity>
         <Text style={styles.classTitle}>{item.name}</Text>
         <Text style={styles.level}>Cấp độ: {item.level}</Text>
         <Text style={styles.desc}>{item.description}</Text>
@@ -198,9 +205,10 @@ const handleRemoveTeacher = (classId: string, teacherId: string) => {
           ) : (
             item.teachers.map((t: any) => (
               <View key={t._id} style={styles.teacherRow}>
-                <Text style={styles.teacherItem}>👩‍🏫 {t.name} ({t.email})</Text>
+                <Text style={styles.teacherInfo}>👩‍🏫 {t.name} ({t.email})</Text>
 
                 <TouchableOpacity
+                style={styles.deleteIconBtn}
                   onPress={() => handleRemoveTeacher(item._id, t._id)}
                 >
                   <Text style={styles.removeTeacherBtn}>❌</Text>
@@ -231,6 +239,25 @@ const handleRemoveTeacher = (classId: string, teacherId: string) => {
             <Text style={styles.assignText}>➕</Text>
           </TouchableOpacity>
         </View>
+
+        <View style={styles.studentSection}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.label}>👶 Học sinh ({item.students?.length || 0}/{item.maxStudents})</Text>
+            <TouchableOpacity 
+              style={styles.manageBtn}
+              onPress={() => handleOpenStudentManager(item)}
+            >
+              <Text style={styles.manageBtnText}>📋 Quản lý HS</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Preview 3 học sinh đầu tiên (cho gọn) */}
+          {item.students?.slice(0, 3).map((s: any) => (
+             <Text key={s._id} style={{marginLeft: 10, color: '#555'}}>• {s.name}</Text>
+          ))}
+          {(item.students?.length > 3) && <Text style={{marginLeft: 10, color: '#888'}}>...</Text>}
+        </View>    
+
       </View>
     );
   };
@@ -250,6 +277,17 @@ const handleRemoveTeacher = (classId: string, teacherId: string) => {
         renderItem={renderClassItem}
         contentContainerStyle={{ paddingBottom: 100 }}
       />
+
+      {currentClass && (
+        <ClassStudentManagerModal
+          visible={showStudentModal}
+          classData={currentClass} // Luôn là data mới nhất từ biến derived
+          onClose={() => setSelectedClassId(null)} // Đóng bằng cách set null
+          onUpdate={() => {
+            loadData(); // Khi Modal báo update -> loadData chạy -> classes mới -> currentClass tự mới theo
+          }}
+        />
+      )}
 
       {/* Modal thêm lớp */}
       <Modal visible={showModal} animationType="slide" transparent>
@@ -434,12 +472,24 @@ const styles = StyleSheet.create({
   teacherRow: {
   flexDirection: "row",
   alignItems: "center",
-  justifyContent: "space-between",
   backgroundColor: "#F0FFF4",
-  paddingVertical: 6,
+  paddingVertical: 8,
   paddingHorizontal: 10,
   borderRadius: 6,
-  marginTop: 4,
+  marginTop: 6,
+  // bỏ justifyContent: 'space-between' để dùng flex
+},
+teacherInfo: {
+  flex: 1, // Quan trọng: Chiếm hết khoảng trống còn lại
+  marginRight: 10, // Cách nút xóa ra 1 chút
+  color: "#065F46",
+  fontSize: 14,
+},
+deleteIconBtn: {
+  padding: 4,
+},
+deleteIconText: {
+  fontSize: 16,
 },
 
 removeTeacherBtn: {
@@ -460,4 +510,47 @@ deleteClassText: {
   color: "#dc2626",
   fontWeight: "700",
 },
+studentSection: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 10,
+  },
+  rowBetween: {
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    marginBottom: 5
+  },
+  manageBtn: {
+    backgroundColor: '#3B82F6',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 6
+  },
+  manageBtnText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  
+  enrollBox: {
+    backgroundColor: '#F0F9FF',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BAE6FD'
+  },
+  pickerRow: { flexDirection: 'row', gap: 10 },
+  addIconBtn: {
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    paddingHorizontal: 15,
+    borderRadius: 5
+  },
+  studentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: '#eee'
+  },
+  studentName: { fontSize: 16, color: '#333' },
+  closeBtn: { alignSelf: 'center', padding: 10 }
 });

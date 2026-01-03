@@ -16,6 +16,12 @@ const studentSchema = new mongoose.Schema(
       default: null // null = vẫn đang học
     },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
+    targetLevel: { 
+      type: String, 
+      enum: ["infant", "toddler", "preK2", "preK3", "preK4", "preK5"],
+      required: true 
+    },
+    isTrial: { type: Boolean, default: false },
     // 📏 Sức khỏe
     height: { type: Number }, // cm
     weight: { type: Number }, // kg
@@ -29,10 +35,10 @@ const studentSchema = new mongoose.Schema(
     allergies: { type: [String], default: [] },
 
      // 👩‍🏫 Liên kết giáo viên chủ nhiệm
-    teacher: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    teacher: { type: mongoose.Schema.Types.ObjectId, ref: "User",default: null },
 
     // 🔗 Liên kết lớp học
-    classId: { type: mongoose.Schema.Types.ObjectId, ref: "Class" },
+    classId: { type: mongoose.Schema.Types.ObjectId, ref: "Class",default: null },
 
     // 🔗 Liên kết phụ huynh
     parents: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" , required: true}],

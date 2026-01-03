@@ -11,7 +11,6 @@ const classSchema = new mongoose.Schema(
     },
     description: { type: String },
     cameraUrl: { type: String, default: null },
-    tuitionFee: { type: Number, required: true },
 
     // 🔗 Danh sách học sinh
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],

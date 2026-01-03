@@ -9,6 +9,7 @@ import {
   Modal,
   TouchableOpacity,
   Image,
+  Clipboard, ToastAndroid, Alert, Platform
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { getInvoicesByStudent } from "../src/services/tuitionService";
@@ -71,6 +72,15 @@ export default function ParentTuitionScreen() {
     return <ActivityIndicator style={{ marginTop: 60 }} size="large" />;
   }
 
+  const handleCopy = (text: string, label: string) => {
+  Clipboard.setString(text);
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(`Đã sao chép ${label}`, ToastAndroid.SHORT);
+  } else {
+    Alert.alert("Đã sao chép", text);
+  }
+};
+
   return (
     <ScrollView style={styles.container}>
       {/* ===== SELECT CHILD ===== */}
@@ -85,7 +95,7 @@ export default function ParentTuitionScreen() {
             {children.map((c) => (
               <Picker.Item
                 key={c._id}
-                label={`${c.name} (${c.classId?.name})`}
+                label={`${c.name} - ${c.classId?.name || "Chờ xếp lớp"}`} 
                 value={c._id}
               />
             ))}
@@ -160,6 +170,42 @@ export default function ParentTuitionScreen() {
             ) : (
               <Text style={styles.paid}>✅ Đã thanh toán</Text>
             )}
+          </View>
+
+          <View style={{ marginTop: 20, width: '100%' }}>
+            <Text style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: 10 }}>
+              Hoặc chuyển khoản thủ công:
+            </Text>
+            
+            {/* Số tài khoản */}
+            <View style={styles.copyRow}>
+              <View>
+                <Text style={styles.copyLabel}>Số tài khoản (MB Bank):</Text>
+                <Text style={styles.copyValue}>0987654321</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.copyBtn} 
+                onPress={() => handleCopy("0987654321", "Số tài khoản")}
+              >
+                <Text style={styles.copyBtnText}>Copy</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Nội dung CK */}
+            <View style={styles.copyRow}>
+              <View>
+                <Text style={styles.copyLabel}>Nội dung:</Text>
+                <Text style={styles.copyValue}>
+                  EDU {currentInvoice.student.name} T{currentInvoice.month}
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.copyBtn}
+                onPress={() => handleCopy(`EDU ${currentInvoice.student.name} T${currentInvoice.month}`, "Nội dung")}
+              >
+                <Text style={styles.copyBtnText}>Copy</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* ===== HISTORY BUTTON ===== */}
@@ -266,4 +312,19 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
+  copyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB'
+  },
+  copyLabel: { fontSize: 12, color: '#6B7280' },
+  copyValue: { fontSize: 16, fontWeight: 'bold', color: '#1F2937' },
+  copyBtn: { backgroundColor: '#E0F2FE', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 6 },
+  copyBtnText: { color: '#0284C7', fontWeight: '600', fontSize: 12 }
 });

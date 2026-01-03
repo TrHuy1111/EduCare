@@ -57,6 +57,11 @@ export const enrollStudentToClass = async (
   return axios.post(`${API_URL}/enroll-student`, { classId, studentId }, config);
 };
 
+export const removeStudentFromClass = async (classId: string, studentId: string) => {
+  const config = await getAuthHeader();
+  return axios.post(`${API_URL}/remove-student`, { classId, studentId }, config);
+};
+
 // 🗑️ Xóa lớp học
 export const deleteClass = async (classId: string) => {
   const config = await getAuthHeader();
