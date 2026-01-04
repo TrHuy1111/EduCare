@@ -1,8 +1,7 @@
 import Feedback from "../models/Feedback.js";
 import mongoose from "mongoose";
-/**
- * 🧑‍🏫 Teacher tạo hoặc cập nhật feedback
- */
+import Activity from "../models/Activity.js";
+
 export const createOrUpdateFeedback = async (req, res) => {
   try {
     const teacherId = req.user._id;
@@ -10,25 +9,18 @@ export const createOrUpdateFeedback = async (req, res) => {
     const {
       studentId,
       classId,
-      activityDateId,
-      activityItemId,
+      activityDateId, // ID của document Activity (theo ngày)
+      activityItemId, // ID của activity con (VD: Giờ ăn, Giờ ngủ...)
       date,
       comment,
       reward,
     } = req.body;
 
-    if (
-      !studentId ||
-      !classId ||
-      !activityDateId ||
-      !activityItemId ||
-      !date
-    ) {
-      return res.status(400).json({
-        message: "Missing required fields",
-      });
+    if (!studentId || !classId || !activityDateId || !activityItemId || !date) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
+    // 1️⃣ LƯU VÀO BẢNG FEEDBACK RIÊNG (Như cũ - để thống kê/lịch sử chi tiết)
     const feedback = await Feedback.findOneAndUpdate(
       { studentId, activityItemId, date },
       {
@@ -44,19 +36,43 @@ export const createOrUpdateFeedback = async (req, res) => {
       { new: true, upsert: true }
     );
 
+    // ĐỒNG BỘ VÀO BẢNG ACTIVITY 
+    // Bước A: Xóa feedback cũ của học sinh này trong activity đó (nếu có) để tránh trùng lặp
+    await Activity.updateOne(
+      { _id: activityDateId, "activities._id": activityItemId },
+      {
+        $pull: {
+          "activities.$.feedbacks": { studentId: studentId }
+        }
+      }
+    );
+
+    // Bước B: Đẩy feedback mới vào
+    await Activity.updateOne(
+      { _id: activityDateId, "activities._id": activityItemId },
+      {
+        $push: {
+          "activities.$.feedbacks": {
+            studentId: studentId,
+            comment: comment || "",
+            reward: reward || "none",
+            createdAt: new Date()
+          }
+        }
+      }
+    );
+
     res.status(200).json({
-      message: "Feedback saved successfully",
+      message: "Feedback saved and synced successfully",
       data: feedback,
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message });
   }
 };
 
-/**
- * 👨‍👩‍👧 Parent xem feedback của con
- */
 export const getFeedbackByStudent = async (req, res) => {
   try {
     const { studentId } = req.params;
@@ -72,9 +88,7 @@ export const getFeedbackByStudent = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-/**
- * 🧑‍🏫 Teacher xem feedback theo lớp + ngày
- */
+
 export const getFeedbackByClassAndDate = async (req, res) => {
   try {
     const { classId, date } = req.query;
@@ -120,7 +134,7 @@ export const getFeedbackStats = async (req, res) => {
       return res.status(400).json({ message: "Missing params" });
     }
 
-    /** ================= SUMMARY ================= */
+    /* SUMMARY  */
     const summaryAgg = await Feedback.aggregate([
       {
         $match: {

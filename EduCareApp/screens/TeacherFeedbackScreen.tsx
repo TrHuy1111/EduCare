@@ -1,4 +1,3 @@
-// TeacherFeedbackScreen.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -8,10 +7,14 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Alert
+  Alert,
+  LayoutAnimation,
+  Platform,
+  UIManager
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { Calendar } from "react-native-calendars";
+import { Calendar, LocaleConfig } from "react-native-calendars";
+import moment from "moment"; 
 
 import {
   getTeacherClasses,
@@ -20,286 +23,388 @@ import {
 import { getActivities } from "../src/services/activityService";
 import FeedbackModal from "./components/FeedbackModal";
 
+LocaleConfig.locales['vi'] = {
+  monthNames: ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'],
+  monthNamesShort: ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'],
+  dayNames: ['Chủ Nhật','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'],
+  dayNamesShort: ['CN','T2','T3','T4','T5','T6','T7'],
+  today: 'Hôm nay'
+};
+LocaleConfig.defaultLocale = 'vi';
+
+if (Platform.OS === 'android') {
+  if (UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+}
+
 export default function TeacherFeedbackScreen() {
-  /* ================= STATE ================= */
+
   const [classes, setClasses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
-
+  
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
+  
+  const [showCalendar, setShowCalendar] = useState(false);
 
-  // 👉 Activity document của ngày (chỉ 1)
   const [activityDate, setActivityDate] = useState<any>(null);
-
-  // 👉 Activity con trong activities[]
   const [selectedActivityItem, setSelectedActivityItem] = useState<any>(null);
-
+  
   const [loading, setLoading] = useState(false);
-
   const [showModal, setShowModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
 
-  /* ================= LOAD CLASSES ================= */
   useEffect(() => {
     loadClasses();
   }, []);
 
-  const loadClasses = async () => {
-    const res = await getTeacherClasses();
-    const list = res.data || [];
-    setClasses(list);
-    if (list.length > 0) {
-      setSelectedClass(list[0]._id);
-    }
-  };
-
-  /* ================= LOAD DATA BY CLASS + DATE ================= */
   useEffect(() => {
     if (selectedClass) {
-      loadData();
+      loadStudents(selectedClass);
+    }
+  }, [selectedClass]);
+
+  useEffect(() => {
+    if (selectedClass && selectedDate) {
+      loadActivities();
     }
   }, [selectedClass, selectedDate]);
 
-  const loadData = async () => {
+  const loadClasses = async () => {
+    try {
+      const res = await getTeacherClasses();
+      setClasses(res.data);
+      if (res.data.length > 0) setSelectedClass(res.data[0]._id);
+    } catch (err) {
+      console.log("Error load classes", err);
+    }
+  };
+
+  const loadStudents = async (classId: string) => {
     try {
       setLoading(true);
-
-      const [activityRes, studentRes] = await Promise.all([
-        getActivities(selectedClass, selectedDate),
-        getStudentsByClass(selectedClass),
-      ]);
-
-      // 👇 activityDate = 1 document duy nhất (hoặc null)
-      setActivityDate(activityRes.data || null);
-      setStudents(studentRes.data || []);
-
-      // reset activity con khi đổi ngày / lớp
-      setSelectedActivityItem(null);
+      const res = await getStudentsByClass(classId);
+      setStudents(res.data);
+    } catch (err) {
+      console.log("Error load students", err);
     } finally {
       setLoading(false);
     }
   };
 
+  const loadActivities = async () => {
+    try {
+      const res = await getActivities(selectedClass, selectedDate);
+      const actDoc = res.data; 
+
+      // 👇 Log ra để kiểm tra
+      // console.log("Activities mới tải về:", JSON.stringify(actDoc, null, 2));
+
+      setActivityDate(actDoc);
+
+      if (actDoc && actDoc.activities && actDoc.activities.length > 0) {
+        if (selectedActivityItem) {
+          // Tìm lại item đang chọn trong danh sách mới
+          const updatedItem = actDoc.activities.find(
+            (a: any) => a._id === selectedActivityItem._id
+          );
+          
+          if (updatedItem) {
+            // console.log("👉 Đã tìm thấy update cho:", updatedItem.title);
+             //console.log("👉 Số lượng feedback:", updatedItem.feedbacks?.length);
+             setSelectedActivityItem(updatedItem);
+          } else {
+             setSelectedActivityItem(actDoc.activities[0]);
+          }
+        } else {
+          setSelectedActivityItem(actDoc.activities[0]);
+        }
+      } else {
+        setSelectedActivityItem(null);
+      }
+    } catch (err) {
+      console.log("Error load activity", err);
+    }
+  };
+
+  /* ================= HANDLERS ================= */
+  const toggleCalendar = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setShowCalendar(!showCalendar);
+  };
+
   const openFeedback = (student: any) => {
-  if (!activityDate || !selectedActivityItem) {
-    Alert.alert(
-      "Thiếu thông tin",
-      "Vui lòng chọn hoạt động trước khi đánh giá"
-    );
-    return;
-  }
+    if (!selectedActivityItem) {
+      Alert.alert("Chưa có hoạt động", "Vui lòng chọn hoặc tạo hoạt động trước.");
+      return;
+    }
+    setSelectedStudent(student);
+    setShowModal(true);
+  };
 
-  setSelectedStudent(student);
-  setShowModal(true);
-};
-
-  /* ================= UI ================= */
-  return (
-    <View style={styles.container}>
-      <Text style={styles.header}>🌟 Đánh giá học sinh</Text>
-
-      {/* ===== CLASS PICKER ===== */}
-      <View style={styles.card}>
-        <Text style={styles.label}>Lớp học</Text>
-        <Picker selectedValue={selectedClass} onValueChange={setSelectedClass}>
-          {classes.map((c) => (
-            <Picker.Item
-              key={c._id}
-              label={`${c.name} (${c.level})`}
-              value={c._id}
-            />
-          ))}
-        </Picker>
-      </View>
-
-      {/* ===== CALENDAR ===== */}
-      <Calendar
-        onDayPress={(d) => setSelectedDate(d.dateString)}
-        markedDates={{
-          [selectedDate]: { selected: true, selectedColor: "#10B981" },
-        }}
-        style={styles.calendar}
-      />
-
-      {/* ===== ACTIVITY ITEMS IN DAY ===== */}
-      {activityDate ? (
-        <View style={styles.card}>
-          <Text style={styles.label}>Hoạt động trong ngày</Text>
-
-          <Picker
-            selectedValue={selectedActivityItem?._id}
-            onValueChange={(v) => {
-              const item = activityDate.activities.find(
-                (i: any) => i._id === v
-              );
-              setSelectedActivityItem(item);
-            }}
+  /* ================= RENDER COMPONENTS ================= */
+  
+  // 1. Header Component (Chứa Filter & Calendar)
+  const renderHeader = () => (
+    <View>
+      <Text style={styles.screenTitle}>📝 Nhận xét hoạt động</Text>
+      
+      {/* Chọn Lớp & Ngày */}
+      <View style={styles.filterCard}>
+        <View style={styles.pickerContainer}>
+           <Picker
+            selectedValue={selectedClass}
+            onValueChange={(v) => setSelectedClass(v)}
+            style={styles.picker}
+            dropdownIconColor="#065F46"
           >
-            <Picker.Item label="-- Chọn hoạt động --" value="" />
-
-            {activityDate.activities.map((item: any) => (
-              <Picker.Item
-                key={item._id}
-                value={item._id}
-                label={`${item.startTime} - ${item.title}`}
-              />
+            {classes.map((c) => (
+              <Picker.Item key={c._id} label={c.name} value={c._id} />
             ))}
           </Picker>
         </View>
-      ) : (
-        <Text style={styles.empty}>Không có hoạt động trong ngày này</Text>
-      )}
 
-      {/* ===== STUDENT LIST ===== */}
-      {!selectedActivityItem ? (
-        <Text style={styles.empty}>
-          Vui lòng chọn hoạt động để đánh giá học sinh
-        </Text>
-      ) : loading ? (
-        <ActivityIndicator style={{ marginTop: 20 }} />
-      ) : (
-        <>
-          {/* Header row */}
-          <View style={styles.headerRow}>
-            <Text style={[styles.headerText, { flex: 1 }]}>
-              Student Name
-            </Text>
-            <Text style={styles.headerText}>Feedback</Text>
-          </View>
+        {/* Thanh chọn ngày rút gọn */}
+        <TouchableOpacity style={styles.dateSelector} onPress={toggleCalendar}>
+          <Text style={styles.dateText}>
+            📅 {moment(selectedDate).format("DD/MM/YYYY")}
+          </Text>
+          <Text style={{color: '#065F46', fontSize: 12}}>
+            {showCalendar ? "▲ Thu gọn" : "▼ Chọn ngày"}
+          </Text>
+        </TouchableOpacity>
 
-          <FlatList
-            data={students}
-            keyExtractor={(i) => i._id}
-            contentContainerStyle={{ paddingBottom: 40 }}
-            renderItem={({ item }) => (
-              <View style={styles.studentRow}>
-                <Image
-                  source={
-                    item.avatar
-                      ? { uri: item.avatar }
-                      : require("../assets/icons/student.png")
-                  }
-                  style={styles.avatar}
-                />
-
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.studentName}>{item.name}</Text>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.feedbackBtn}
-                  onPress={() => openFeedback(item)}
-                >
-                  <Text style={styles.feedbackText}>Feedback</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+        {/* Lịch (Ẩn/Hiện) */}
+        {showCalendar && (
+          <Calendar
+            current={selectedDate}
+            onDayPress={(day) => {
+              setSelectedDate(day.dateString);
+              toggleCalendar(); // Chọn xong tự đóng
+            }}
+            markedDates={{
+              [selectedDate]: { selected: true, selectedColor: "#10B981" },
+            }}
+            theme={{
+              todayTextColor: "#F59E0B",
+              arrowColor: "#10B981",
+            }}
+            style={styles.calendar}
           />
-        </>
+        )}
+      </View>
+
+      {/* Chọn Hoạt động (Tab ngang) */}
+      <View style={{ marginBottom: 15 }}>
+        <Text style={styles.sectionLabel}>Hoạt động trong ngày:</Text>
+        {!activityDate || !activityDate.activities || activityDate.activities.length === 0 ? (
+          <Text style={styles.emptyText}>(Chưa có hoạt động nào được ghi nhận)</Text>
+        ) : (
+          <FlatList 
+            data={activityDate.activities}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => {
+              const isSelected = selectedActivityItem?._id === item._id;
+              return (
+                <TouchableOpacity
+                  onPress={() => setSelectedActivityItem(item)}
+                  style={[
+                    styles.activityTab,
+                    isSelected && styles.activityTabActive
+                  ]}
+                >
+                  <Text style={[styles.activityTabText, isSelected && {color:'#fff'}]}>
+                    {item.title}
+                  </Text>
+                </TouchableOpacity>
+              )
+            }}
+          />
+        )}
+      </View>
+
+      {/* Tiêu đề danh sách */}
+      <View style={styles.listHeaderRow}>
+        <Text style={styles.listHeaderTitle}>Danh sách học sinh ({students.length})</Text>
+        <Text style={styles.listHeaderSub}>
+           {selectedActivityItem ? `Đang chấm: ${selectedActivityItem.title}` : "Chọn hoạt động để chấm"}
+        </Text>
+      </View>
+    </View>
+  );
+
+  // 2. Render Student Item (Card Style)
+  const renderStudent = ({ item }: any) => {
+    // Check đã feedback chưa
+    const feedback = selectedActivityItem?.feedbacks?.find(
+      (f: any) => f.studentId?.toString() === item._id?.toString()
+    );
+    const hasFeedback = !!feedback;
+
+    return (
+      <TouchableOpacity 
+        style={[styles.studentCard, hasFeedback && styles.studentCardDone]} 
+        onPress={() => openFeedback(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.cardLeft}>
+           <Image 
+             source={item.avatar ? { uri: item.avatar } : require("../assets/icons/student.png")} 
+             style={styles.avatar} 
+           />
+           <View>
+             <Text style={styles.studentName}>{item.name}</Text>
+             {hasFeedback ? (
+               <View style={styles.badgeDone}>
+                 <Text style={styles.badgeText}>✅ Đã nhận xét</Text>
+                 {feedback.reward !== 'none' && (
+                    <Text style={{marginLeft: 5}}>
+                      {feedback.reward === 'star' ? '⭐' : feedback.reward === 'flower' ? '🌸' : '🏅'}
+                    </Text>
+                 )}
+               </View>
+             ) : (
+               <Text style={styles.pendingText}>Chưa nhận xét</Text>
+             )}
+           </View>
+        </View>
+
+        <View style={styles.cardRight}>
+             <Text style={{fontSize: 20, color: '#ccc'}}>✎</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      {loading ? (
+        <ActivityIndicator size="large" color="#10B981" style={{ marginTop: 50 }} />
+      ) : (
+        <FlatList
+          data={students}
+          extraData={selectedActivityItem}
+          keyExtractor={(item) => item._id}
+          renderItem={renderStudent}
+          ListHeaderComponent={renderHeader} // 🔥 KEY FIX: Đưa header vào đây
+          contentContainerStyle={{ paddingBottom: 40 }}
+          ListEmptyComponent={
+            <Text style={{textAlign:'center', marginTop: 20, color:'#888'}}>Lớp chưa có học sinh</Text>
+          }
+        />
       )}
 
-      {/* ===== FEEDBACK MODAL ===== */}
-      <FeedbackModal
-        visible={showModal}
-        onClose={() => setShowModal(false)}
-        student={selectedStudent}
-        classId={selectedClass}
-        activityDate={activityDate}
-        activityItem={selectedActivityItem}
-        date={selectedDate}
-      />
+      {/* Modal giữ nguyên logic */}
+      {showModal && (
+        <FeedbackModal
+          visible={showModal}
+          onClose={() => {
+            setShowModal(false);
+            loadActivities(); // Reload để cập nhật tick xanh
+          }}
+          student={selectedStudent}
+          classId={selectedClass}
+          date={selectedDate}
+          activityDate={activityDate}
+          activityItem={selectedActivityItem}
+        />
+      )}
     </View>
   );
 }
 
-/* ================= STYLES ================= */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F0FDF4",
-    padding: 16,
-  },
+  container: { flex: 1, backgroundColor: "#F3F4F6", padding: 16 },
+  screenTitle: { fontSize: 24, fontWeight: "800", color: "#065F46", marginBottom: 16 },
 
-  header: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#065F46",
-    marginBottom: 12,
-  },
-
-  label: {
-    fontWeight: "700",
-    marginBottom: 6,
-    color: "#064E3B",
-  },
-
-  card: {
+  // Filter Card
+  filterCard: {
     backgroundColor: "#fff",
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 12,
-    marginBottom: 14,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
   },
-
-  calendar: {
-    borderRadius: 14,
-    marginBottom: 14,
-  },
-
-  headerRow: {
-    flexDirection: "row",
-    backgroundColor: "#7873C0",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
     marginBottom: 10,
+    backgroundColor: "#F9FAFB"
   },
-
-  headerText: {
-    color: "#fff",
-    fontWeight: "700",
+  picker: { height: 50 },
+  dateSelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: "#ECFDF5",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#A7F3D0"
   },
+  dateText: { fontWeight: "700", color: "#064E3B", fontSize: 16 },
+  calendar: { marginTop: 10, borderRadius: 10 },
 
-  studentRow: {
+  // Activity Tabs
+  sectionLabel: { fontSize: 14, fontWeight: "600", color: "#6B7280", marginBottom: 8 },
+  emptyText: { fontStyle: "italic", color: "#9CA3AF" },
+  activityTab: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB"
+  },
+  activityTabActive: {
+    backgroundColor: "#10B981",
+    borderColor: "#10B981",
+  },
+  activityTabText: { fontWeight: "600", color: "#374151" },
+
+  // List Header
+  listHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginBottom: 10,
+    paddingHorizontal: 4
+  },
+  listHeaderTitle: { fontSize: 18, fontWeight: "700", color: "#1F2937" },
+  listHeaderSub: { fontSize: 12, color: "#EF4444", fontWeight: "600" },
+
+  // Student Card
+  studentCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5F6FA",
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 10,
+    justifyContent: "space-between",
+    elevation: 1,
   },
-
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    marginRight: 14,
+  studentCardDone: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#10B981", 
   },
-
-  studentName: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#064E3B",
-  },
-
-  feedbackBtn: {
-    backgroundColor: "#10B981",
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 18,
-  },
-
-  feedbackText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 13,
-  },
-
-  empty: {
-    textAlign: "center",
-    marginTop: 20,
-    color: "#6B7280",
-    fontStyle: "italic",
-  },
+  cardLeft: { flexDirection: "row", alignItems: "center" },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#E5E7EB", marginRight: 12 },
+  studentName: { fontSize: 16, fontWeight: "700", color: "#111827" },
+  
+  badgeDone: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#D1FAE5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4, alignSelf: 'flex-start' },
+  badgeText: { fontSize: 11, color: '#065F46', fontWeight: 'bold' },
+  
+  pendingText: { fontSize: 12, color: "#9CA3AF", marginTop: 4 },
+  
+  cardRight: { paddingHorizontal: 10 },
 });
