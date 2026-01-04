@@ -8,6 +8,8 @@ import {
   FlatList,
   Alert,
   ScrollView,
+  Modal, 
+  RefreshControl
 } from "react-native";
 import auth from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
@@ -16,17 +18,45 @@ import {
   getAllAnnouncements,
   BASE_URL,
 } from "../src/services/announcementService";
-
+import { getNotifications, markNotificationRead } from "../src/services/notificationService";
 
 export default function HomeScreen() {
   const navigation: any = useNavigation();
   const [events, setEvents] = useState<any[]>([]);
 
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifModal, setShowNotifModal] = useState(false);
+
   useFocusEffect(
-  useCallback(() => {
-    loadEvents();
-  }, [])
-);
+    useCallback(() => {
+      loadEvents();
+      loadNotifications(); 
+    }, [])
+  );
+
+  const loadNotifications = async () => {
+    try {
+      const res = await getNotifications();
+      setNotifications(res.data.data);
+      setUnreadCount(res.data.unreadCount);
+    } catch (e) {
+      console.log("Notif error", e);
+    }
+  };
+
+  const handleReadNotif = async (item: any) => {
+    if (!item.isRead) {
+      await markNotificationRead(item._id);
+      loadNotifications(); // Reload để update badge
+    }
+    setShowNotifModal(false);
+
+    // Nếu là thông báo học phí, chuyển trang
+    if (item.type === "tuition") {
+      navigation.navigate("ParentApp", { screen: "ParentTuition" });
+    }
+  };
 
   const loadEvents = async () => {
     try {
@@ -56,6 +86,18 @@ export default function HomeScreen() {
           </Text>
           <Text style={styles.subText}>EduCare App</Text>
         </View>
+
+        {/* 🔔 BELL ICON */}
+        <TouchableOpacity onPress={() => setShowNotifModal(true)}>
+          <Text style={{ fontSize: 28 }}>🔔</Text>
+          {unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* ===== QUICK ACTIONS ===== */}
@@ -114,6 +156,58 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
       />
+
+      <Modal visible={showNotifModal} animationType="fade" transparent>
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setShowNotifModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Thông báo mới</Text>
+            
+            {notifications.length === 0 ? (
+              <Text style={{textAlign: 'center', color: '#666', marginTop: 20}}>
+                Không có thông báo nào.
+              </Text>
+            ) : (
+              <FlatList
+                data={notifications}
+                keyExtractor={(item) => item._id}
+                style={{ maxHeight: 400 }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={[
+                      styles.notifItem, 
+                      !item.isRead && { backgroundColor: "#E6FDF3" } 
+                    ]}
+                    onPress={() => handleReadNotif(item)}
+                  >
+                    <Text style={{fontSize: 20, marginRight: 10}}>
+                      {item.type === 'tuition' ? '💰' : '📢'}
+                    </Text>
+                    <View style={{flex: 1}}>
+                      <Text style={styles.notifTitle}>{item.title}</Text>
+                      <Text style={styles.notifMsg}>{item.message}</Text>
+                      <Text style={styles.notifTime}>
+                        {new Date(item.createdAt).toLocaleDateString("vi-VN")}
+                      </Text>
+                    </View>
+                    {!item.isRead && <View style={styles.dot} />}
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+            
+            <TouchableOpacity 
+              style={styles.closeBtn} 
+              onPress={() => setShowNotifModal(false)}
+            >
+              <Text style={{color: 'white', fontWeight: 'bold'}}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 }
@@ -254,5 +348,55 @@ likeBadge: {
     borderRadius: 12,
     elevation: 2, 
   },
+badge: {
+    position: "absolute",
+    right: -2,
+    top: -2,
+    backgroundColor: "red",
+    borderRadius: 10,
+    width: 18,
+    height: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#7DE7C8"
+  },
+  badgeText: { color: "white", fontSize: 10, fontWeight: "bold" },
+
+  // Style cho Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 20,
+    maxHeight: "60%",
+  },
+  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10, color: "#064E3B" },
+  
+  notifItem: {
+    flexDirection: "row",
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    alignItems: 'center'
+  },
+  notifTitle: { fontWeight: "700", fontSize: 14, marginBottom: 2 },
+  notifMsg: { fontSize: 13, color: "#444" },
+  notifTime: { fontSize: 11, color: "#888", marginTop: 4 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "red", marginLeft: 5 },
+  
+  closeBtn: {
+    marginTop: 15,
+    backgroundColor: "#064E3B",
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center"
+  }
   
 });

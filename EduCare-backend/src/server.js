@@ -11,6 +11,7 @@ import announcementRoutes from './routes/announcementRoutes.js';
 import tuitionRoutes from './routes/tuitionRoutes.js';
 import feeConfigRoutes from './routes/feeConfigRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
+import notificationRoutes from "./routes/notificationRoutes.js";
 import path from 'path';
 dotenv.config();
 
@@ -39,6 +40,8 @@ app.use("/api/activities", activityRoutes);
 app.use("/api/announcements", announcementRoutes);
 
 app.use("/api/tuition", tuitionRoutes);
+
+app.use("/api/notifications", notificationRoutes);
 
 app.use("/api/fee-config", feeConfigRoutes);
 

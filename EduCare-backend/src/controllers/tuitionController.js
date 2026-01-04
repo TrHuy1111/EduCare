@@ -3,6 +3,7 @@ import TuitionInvoice from "../models/tuitionInvoiceModel.js";
 import Student from "../models/studentModel.js";
 import FeeConfig from "../models/feeConfigModel.js";
 import ExcelJS from "exceljs";
+import Notification from "../models/notificationModel.js";
 /**
  * Tạo invoice học phí cho toàn bộ học sinh theo tháng
  * Flow:
@@ -36,6 +37,7 @@ export const generateMonthlyTuition = async (req, res) => {
     // 2️⃣ Lấy danh sách học sinh đang active
     const students = await Student.find({ status: "active" });
     const created = [];
+    const notifications = [];
 
     // Xác định ngày đầu và cuối của tháng tính phí
     const monthStart = new Date(year, month - 1, 1);
@@ -141,6 +143,23 @@ export const generateMonthlyTuition = async (req, res) => {
       });
 
       created.push(invoice);
+
+      if (s.parents && s.parents.length > 0) {
+        for (const parentId of s.parents) {
+          notifications.push({
+            recipient: parentId,
+            title: "📢 Thông báo học phí",
+            message: `Đã có học phí tháng ${month}/${year} cho bé ${s.name}. Số tiền: ${totalAmount.toLocaleString()} VND.`,
+            type: "tuition",
+            relatedId: invoice._id, // Lưu ID hóa đơn để sau này click vào nhảy sang màn hình đóng tiền
+            isRead: false,
+          });
+        }
+      }
+    }
+
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
     }
 
     res.status(201).json({
