@@ -35,6 +35,9 @@ export default function ClassStudentManagerModal({
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [loading, setLoading] = useState(false);
   
+  const currentSize = classData?.students?.length || 0;
+  const maxSize = classData?.maxStudents || 0;
+  const isFull = currentSize >= maxSize;
   useEffect(() => {
     if (visible && classData) {
       loadWaitingList();
@@ -128,14 +131,19 @@ export default function ClassStudentManagerModal({
         <View style={styles.modalBox}>
           <Text style={styles.modalTitle}>👶 Lớp {classData?.name}</Text>
           <Text style={{ marginBottom: 15, color: "#064E3B", textAlign: "center" }}>
-            Sĩ số: <Text style={{fontWeight:'bold'}}>{classData?.students?.length}/{classData?.maxStudents}</Text>
+            Sĩ số:{" "}
+            <Text style={{ fontWeight: "bold", color: isFull ? "red" : "#064E3B" }}>
+              {currentSize}/{maxSize}
+            </Text>
+            {isFull && <Text style={{ color: "red", fontWeight: "bold" }}> (Đã đầy)</Text>}
           </Text>
 
           {/* 1. KHUNG THÊM HỌC SINH */}
           <View style={styles.enrollBox}>
-            <Text style={{ fontWeight: "bold", marginBottom: 8, color: '#065F46' }}>
+            <Text style={{ fontWeight: "bold", marginBottom: 8, color: "#065F46" }}>
               ➕ Thêm từ danh sách chờ ({classData?.level}):
             </Text>
+            
             {waitingList.length === 0 ? (
               <Text style={{ fontStyle: "italic", color: "#888", marginBottom: 5 }}>
                 (Trống)
@@ -146,7 +154,8 @@ export default function ClassStudentManagerModal({
                   <Picker
                     selectedValue={selectedStudentId}
                     onValueChange={(v) => setSelectedStudentId(v)}
-                    style={{ height: 45 }}
+                    style={{ height: 55 }}
+                    enabled={!isFull} // Disable picker nếu đầy (tuỳ chọn)
                   >
                     <Picker.Item label="-- Chọn bé --" value="" />
                     {waitingList.map((s) => (
@@ -158,14 +167,28 @@ export default function ClassStudentManagerModal({
                     ))}
                   </Picker>
                 </View>
+
+                {/*2. Cập nhật nút ADD: Disable nếu Full */}
                 <TouchableOpacity
-                  style={styles.addIconBtn}
+                  style={[
+                    styles.addIconBtn,
+                    (loading || isFull) && { backgroundColor: "#ccc" }, // Đổi màu xám
+                  ]}
                   onPress={handleEnroll}
-                  disabled={loading}
+                  disabled={loading || isFull} // Chặn bấm
                 >
-                  <Text style={{ color: "#fff", fontWeight: "bold" }}>ADD</Text>
+                  <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                    {isFull ? "FULL" : "ADD"}
+                  </Text>
                 </TouchableOpacity>
               </View>
+            )}
+            
+            {/* Hiển thị dòng cảnh báo nếu đầy */}
+            {isFull && waitingList.length > 0 && (
+               <Text style={{color: 'red', fontSize: 11, marginTop: 5, fontStyle: 'italic'}}>
+                 * Lớp đã đạt sĩ số tối đa, không thể thêm mới.
+               </Text>
             )}
           </View>
 
@@ -236,6 +259,8 @@ const styles = StyleSheet.create({
     borderColor: "#D1D5DB",
     borderRadius: 8,
     backgroundColor: "#fff",
+    height: 50,
+    overflow: 'hidden',
     justifyContent: 'center'
   },
   addIconBtn: {

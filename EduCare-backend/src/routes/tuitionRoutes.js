@@ -5,15 +5,16 @@ import {
   getInvoicesByStudent,
   getInvoicesByMonth,
   payInvoice,
-  getInvoiceDetail
+  getInvoiceDetail,
+  exportTuitionExcel
 } from "../controllers/tuitionController.js";
 import { checkRole } from "../middlewares/checkRole.js";
 const router = express.Router();
 
 // 🔥 ADMIN
-router.post("/generate", authMiddleware, generateMonthlyTuition);
-router.get("/month", authMiddleware, getInvoicesByMonth);
-
+router.post("/generate", authMiddleware, checkRole(['admin']), generateMonthlyTuition);
+router.get("/month", authMiddleware, checkRole(['admin']), getInvoicesByMonth);
+router.get("/export", authMiddleware, checkRole(['admin']), exportTuitionExcel);
 // 👨‍👩‍👧 PARENT / STUDENT
 router.get("/student/:studentId", authMiddleware, getInvoicesByStudent);
 

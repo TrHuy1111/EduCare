@@ -43,9 +43,7 @@ export default function DashboardScreen() {
   { name: 'Attendance', image: require('../assets/icons/attendance.png'), route: 'AttendanceHome', roles: ['teacher'] },
   { name: 'Activities', image: require('../assets/icons/calendar.png'), route: 'TeacherActivity', roles: ['teacher'] },
   { name: 'Announcements', image: require('../assets/icons/anouncement.png'), route: role === 'admin' ? 'AdminAnnouncementList' : undefined, roles: ['admin'] },
-  { name: 'Tuition Management', image: require('../assets/icons/tuition.png'), route: role === 'admin' ? 'AdminFeeConfig' : undefined, roles: ['admin'] },
-  { name: 'Generate Tuition', image: require('../assets/icons/tuition.png'), route: role === 'admin' ? 'AdminTuitionGenerate' : undefined, roles: ['admin'] },
-  { name: 'View Invoices', image: require('../assets/icons/tuition.png'), route: role === 'admin' ? 'AdminTuitionList' : undefined, roles: ['admin'] },
+  { name: 'Tuition Management', image: require('../assets/icons/tuition.png'), route: role === 'admin' ? 'AdminTuitionMenu' : undefined, roles: ['admin'] },
   { name: 'My Tuition', image: require('../assets/icons/tuition.png'), route: 'ParentTuition', roles: ['parent'] },
   { name: 'Camera Management', image: require('../assets/camera.png'), route: 'AdminCamera', roles: ['admin'] },
   { name: 'Class Camera', image: require('../assets/camera.png'), route: 'ParentCamera', roles: ['parent'] },
@@ -64,7 +62,7 @@ export default function DashboardScreen() {
       return;
     }
 
-    if (['AdminStudentList', 'AdminUserList', 'AdminClassManagement','AdminAnnouncementList', 'AdminFeeConfig','AdminTuitionGenerate','AdminTuitionList', 'AdminTuitionDetail', 'AdminCamera'].includes(route)) {
+    if (['AdminStudentList', 'AdminUserList', 'AdminClassManagement','AdminAnnouncementList', 'AdminTuitionMenu', 'AdminFeeConfig','AdminTuitionGenerate','AdminTuitionList', 'AdminTuitionDetail', 'AdminCamera'].includes(route)) {
       navigation.navigate('AdminApp', { screen: route });
       return;
     }

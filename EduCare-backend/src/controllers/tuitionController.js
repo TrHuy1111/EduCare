@@ -2,7 +2,7 @@
 import TuitionInvoice from "../models/tuitionInvoiceModel.js";
 import Student from "../models/studentModel.js";
 import FeeConfig from "../models/feeConfigModel.js";
-
+import ExcelJS from "exceljs";
 /**
  * Tạo invoice học phí cho toàn bộ học sinh theo tháng
  * Flow:
@@ -169,13 +169,29 @@ export const getInvoicesByStudent = async (req, res) => {
 };
 
 export const getInvoicesByMonth = async (req, res) => {
-  const { month, year } = req.query;
+  try {
+    const { month, year, search } = req.query; // Thêm search
 
-  const invoices = await TuitionInvoice.find({ month, year })
-    .populate("student", "name")
-    .populate("classId", "name level");
+    // 1. Lấy toàn bộ invoice tháng đó (đã populate tên HS, tên Lớp)
+    let invoices = await TuitionInvoice.find({ month, year })
+      .populate("student", "name code") // Ví dụ populate thêm mã HS nếu có
+      .populate("classId", "name level");
 
-  res.json(invoices);
+    // 2. Nếu có từ khóa search -> Lọc thủ công bằng JS (Cách đơn giản nhất)
+    if (search) {
+      const lowerSearch = search.toLowerCase();
+      invoices = invoices.filter((inv) => {
+        const studentName = inv.student?.name?.toLowerCase() || "";
+        const className = inv.classId?.name?.toLowerCase() || "";
+        // Tìm theo tên HS hoặc tên Lớp
+        return studentName.includes(lowerSearch) || className.includes(lowerSearch);
+      });
+    }
+
+    res.json(invoices);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const payInvoice = async (req, res) => {
@@ -216,5 +232,58 @@ export const getInvoiceDetail = async (req, res) => {
   } catch (err) {
     console.error("❌ get invoice detail error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+export const exportTuitionExcel = async (req, res) => {
+  try {
+    const { month, year } = req.query;
+
+    // 1. Lấy dữ liệu
+    const invoices = await TuitionInvoice.find({ month, year })
+      .populate("student", "name")
+      .populate("classId", "name");
+
+    // 2. Tạo Workbook Excel
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(`HocPhi_T${month}_${year}`);
+
+    // 3. Định nghĩa cột
+    worksheet.columns = [
+      { header: 'STT', key: 'stt', width: 5 },
+      { header: 'Học sinh', key: 'student', width: 25 },
+      { header: 'Lớp', key: 'class', width: 15 },
+      { header: 'Số tiền', key: 'amount', width: 15 },
+      { header: 'Trạng thái', key: 'status', width: 15 },
+      { header: 'Ngày đóng', key: 'paidDate', width: 15 },
+    ];
+
+    // 4. Đổ dữ liệu
+    invoices.forEach((inv, index) => {
+      worksheet.addRow({
+        stt: index + 1,
+        student: inv.student?.name || "Unknown",
+        class: inv.classId?.name || "Unknown",
+        amount: inv.totalAmount,
+        status: inv.status === 'paid' ? 'Đã đóng' : 'Chưa đóng',
+        paidDate: inv.paidDate ? new Date(inv.paidDate).toLocaleDateString('vi-VN') : ''
+      });
+    });
+
+    // Style header cho đẹp (Optional)
+    worksheet.getRow(1).font = { bold: true };
+
+    // 5. Xuất ra buffer base64
+    const buffer = await workbook.xlsx.writeBuffer();
+    const base64 = buffer.toString('base64');
+
+    res.json({ 
+      fileName: `Baocao_Hocphi_T${month}_${year}.xlsx`,
+      base64: base64 
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi xuất file" });
   }
 };

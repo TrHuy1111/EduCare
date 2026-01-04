@@ -179,6 +179,29 @@ export default function AdminStudentFormScreen() {
     }
   };
 
+  const handleToggleTrial = (value: boolean) => {
+    if (!value && form.endDate) {
+      Alert.alert(
+        "Chuyển sang Học chính thức",
+        "Bạn đang tắt chế độ học thử nhưng vẫn còn 'Ngày kết thúc'. Bạn có muốn xóa ngày kết thúc để bé học dài hạn không?",
+        [
+          {
+            text: "Giữ nguyên",
+            onPress: () => setForm({ ...form, isTrial: value }), // Chỉ đổi trạng thái, giữ ngày
+            style: "cancel",
+          },
+          {
+            text: "Xóa ngày kết thúc",
+            onPress: () => setForm({ ...form, isTrial: value, endDate: null }), // Đổi trạng thái + Xóa ngày
+          },
+        ]
+      );
+    } 
+    else {
+      setForm({ ...form, isTrial: value });
+    }
+  };
+
   const computeAgeText = (dob: Date) => {
     const now = new Date();
     let years = now.getFullYear() - dob.getFullYear();
@@ -241,7 +264,7 @@ export default function AdminStudentFormScreen() {
         <Text style={styles.labelSwitch}>Chế độ Học thử (Trial Mode)</Text>
         <Switch
           value={form.isTrial}
-          onValueChange={(val) => setForm({ ...form, isTrial: val })}
+          onValueChange={handleToggleTrial} 
           trackColor={{ false: "#767577", true: "#10B981" }}
         />
       </View>

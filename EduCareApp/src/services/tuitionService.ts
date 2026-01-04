@@ -32,9 +32,13 @@ export const getInvoicesByStudent = async (studentId: string) => {
   return axios.get(`${API_URL}/student/${studentId}`, config);
 };
 // 📄 Lấy invoice theo tháng
-export const getInvoicesByMonth = async (month: number, year: number) => {
+export const getInvoicesByMonth = async (month: number, year: number, search?: string) => {
   const config = await getAuthHeader();
-  return axios.get(`${API_URL}/month?month=${month}&year=${year}`, config);
+  let url = `${API_URL}/month?month=${month}&year=${year}`;
+  if (search) {
+    url += `&search=${encodeURIComponent(search)}`;
+  }
+  return axios.get(url, config);
 };
 
 // 📄 Lấy chi tiết 1 invoice
@@ -47,4 +51,10 @@ export const getInvoiceDetail = async (invoiceId: string) => {
 export const payInvoice = async (invoiceId: string) => {
   const config = await getAuthHeader();
   return axios.patch(`${API_URL}/pay/${invoiceId}`, {}, config);
+};
+// 📄 Xuat file
+export const exportTuition = async (month: number, year: number) => {
+  const config = await getAuthHeader();
+  // Gọi đến endpoint /export mà bạn đã khai báo trong router
+  return axios.get(`${API_URL}/export?month=${month}&year=${year}`, config);
 };
