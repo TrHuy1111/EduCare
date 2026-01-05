@@ -1,27 +1,29 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Switch, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { fetchAllUsers, updateUserRole, toggleUserStatus } from '../src/services/userService';
 
 export default function AdminUserListScreen() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-
+  const [searchText, setSearchText] = useState("");
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const res = await fetchAllUsers();
+      const res = await fetchAllUsers(searchText);
       setUsers(res.data);
     } catch (err: any) {
       console.error('❌ Lỗi tải user:', err.message);
-      Alert.alert('Lỗi', 'Không thể tải danh sách người dùng');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    const timer = setTimeout(() => {
+      loadUsers();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
@@ -84,6 +86,15 @@ export default function AdminUserListScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>👥 Quản lý người dùng</Text>
+      <View style={styles.searchBox}>
+        <Text style={{marginRight: 8}}>🔍</Text>
+        <TextInput 
+          style={styles.input}
+          placeholder="Tìm tên, email hoặc số điện thoại..."
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+      </View>
       {loading ? (
         <Text>Đang tải...</Text>
       ) : (
@@ -132,4 +143,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
     justifyContent: 'space-between',
   },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    height: 45
+  },
+  input: {
+    flex: 1,
+    height: '100%',
+  }
 });

@@ -83,8 +83,13 @@ export const updateStudent = async (req, res) => {
 // 🟢 GET ALL STUDENTS (FILTERS OK)
 export const getAllStudents = async (req, res) => {
   try {
-    const { gender, minAge, maxAge, minHeight, maxHeight, minWeight, maxWeight } = req.query;
+    const { gender, minAge, maxAge, minHeight, maxHeight, minWeight, maxWeight, classId, name } = req.query;
     const query = {};
+
+    if (name) {
+      query.name = { $regex: name, $options: "i" };
+    }
+    if (classId) query.classId = classId;
 
     if (gender) query.gender = gender;
 
@@ -114,7 +119,8 @@ export const getAllStudents = async (req, res) => {
     const students = await Student.find(query)
       .populate("classId", "name level")
       .populate("teacher", "name email")
-      .populate("parents", "name phone email");
+      .populate("parents", "name phone email")
+      .sort({ createdAt: -1 });
 
     res.json(students);
   } catch (err) {

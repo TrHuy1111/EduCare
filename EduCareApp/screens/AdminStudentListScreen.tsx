@@ -1,5 +1,5 @@
 // AdminStudentListScreen.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,14 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
+  TextInput
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { Picker } from "@react-native-picker/picker";
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AdminStackParamList  } from '../navigation/AdminNavigator';
 import { getAllStudents, deleteStudent } from '../src/services/studentService';
+import { getAllClasses } from '../src/services/classService';
 import { Image } from 'react-native';
 type NavProp = NativeStackNavigationProp<AdminStackParamList, 'AdminStudentList'>;
 
@@ -41,20 +44,47 @@ export default function AdminStudentListScreen() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const loadStudents = async () => {
-  try {
-    setLoading(true);
-    const res = await getAllStudents();
-    console.log("📦 Student API response:", res.data);
-    setStudents(res.data || []); // ✅ lấy mảng trong res.data
-  } catch (err: any) {
-    console.error('❌ Lỗi tải học sinh:', err.message);
-    Alert.alert("Lỗi", err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+  const [classes, setClasses] = useState<any[]>([]); 
+  const [searchText, setSearchText] = useState("");
+  const [filterClassId, setFilterClassId] = useState("");
 
+  const loadClasses = async () => {
+    try {
+      const res = await getAllClasses();
+      setClasses(res.data);
+    } catch (err) {
+      console.log("Error loading classes", err);
+    }
+  };
+
+  const loadStudents = async () => {
+    try {
+      setLoading(true);
+      // Gọi service với tham số
+      const res = await getAllStudents({ 
+        name: searchText, 
+        classId: filterClassId 
+      });
+      setStudents(res.data || []);
+    } catch (err: any) {
+      console.error('❌ Lỗi tải học sinh:', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    loadClasses();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      
+      const timer = setTimeout(() => {
+        loadStudents();
+      }, 500);
+      return () => clearTimeout(timer);
+    }, [searchText, filterClassId]) 
+  );
   const handleDelete = async (id: string) => {
     Alert.alert('Confirm', 'Are you sure you want to delete this student?', [
       { text: 'Cancel', style: 'cancel' },
@@ -113,6 +143,33 @@ export default function AdminStudentListScreen() {
       </TouchableOpacity>
       <Text style={styles.header}>👩‍🏫 Student List</Text>
     </View>
+
+    <View style={styles.filterContainer}>
+        {/* Ô tìm tên */}
+        <View style={styles.searchBox}>
+          <Text style={{marginRight: 8}}>🔍</Text>
+          <TextInput 
+            style={styles.searchInput}
+            placeholder="Tìm tên học sinh..."
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+        </View>
+
+        {/* Dropdown chọn lớp */}
+        <View style={styles.pickerBox}>
+          <Picker
+            selectedValue={filterClassId}
+            onValueChange={(itemValue) => setFilterClassId(itemValue)}
+            style={{ height: 50, width: '100%' }}
+          >
+            <Picker.Item label="-- Tất cả lớp --" value="" />
+            {classes.map((cls) => (
+              <Picker.Item key={cls._id} label={cls.name} value={cls._id} />
+            ))}
+          </Picker>
+        </View>
+      </View>
 
     {loading ? (
       <ActivityIndicator size="large" color="#2bbf9a" />
@@ -206,4 +263,30 @@ backIcon: {
   height: 28,
   resizeMode: 'contain',
 },
+filterContainer: {
+    marginBottom: 10,
+    gap: 10
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    height: 45
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16
+  },
+  pickerBox: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    justifyContent: 'center',
+    height: 45 
+  }
 });

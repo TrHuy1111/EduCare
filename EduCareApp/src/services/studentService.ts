@@ -20,9 +20,12 @@ export const createStudent = async (data: any) => {
   return axios.post(API_URL, data, config);
 };
 
-export const getAllStudents = async () => {
+export const getAllStudents = async (params?: { name?: string; classId?: string }) => {
   const config = await getAuthHeader();
-  return axios.get(API_URL, config);
+  return axios.get(API_URL, {
+    ...config,
+    params: params,
+  });
 };
 
 export const getStudentById = async (id: string) => {

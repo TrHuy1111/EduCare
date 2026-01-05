@@ -32,19 +32,13 @@ const getToken = async () => {
   return await currentUser.getIdToken();
 };
 
-export const fetchAllUsers = async () => {
+export const fetchAllUsers = async (search: string = "") => {
   const token = await getToken();
   console.log("🔑 Firebase Token:", token.substring(0, 30) + "..."); // log token
-  try {
-    const res = await axios.get(API_URL, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    console.log("✅ fetchAllUsers result:", res.data);
-    return res;
-  } catch (err: any) {
-    console.error("❌ fetchAllUsers error:", err.response?.status, err.response?.data || err.message);
-    throw err;
-  }
+  return axios.get(API_URL, {
+    headers: { Authorization: `Bearer ${token}` },
+    params: { search },
+  });
 };
 
 export const updateUserRole = async (userId: string, newRole: string) => {

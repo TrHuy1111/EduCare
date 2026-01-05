@@ -4,11 +4,27 @@ import User from '../models/User.js';
 /** 🟢 Lấy danh sách toàn bộ user */
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select('-__v');
+    const { search, role } = req.query; 
+    
+    let query = {};
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } } 
+      ];
+    }
+
+    if (role) {
+      query.role = role;
+    }
+
+    const users = await User.find(query).select("-__v").sort({ createdAt: -1 });
     res.status(200).json(users);
   } catch (err) {
-    console.error('❌ getAllUsers error:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error("❌ getAllUsers error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
