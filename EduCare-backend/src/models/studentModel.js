@@ -34,9 +34,6 @@ const studentSchema = new mongoose.Schema(
     medicalNote: { type: String },
     allergies: { type: [String], default: [] },
 
-     // 👩‍🏫 Liên kết giáo viên chủ nhiệm
-    teacher: { type: mongoose.Schema.Types.ObjectId, ref: "User",default: null },
-
     // 🔗 Liên kết lớp học
     classId: { type: mongoose.Schema.Types.ObjectId, ref: "Class",default: null },
 

@@ -130,7 +130,7 @@ export default function AdminStudentListScreen() {
       </TouchableOpacity>
     </TouchableOpacity>
   );
-
+  
   return (
     <View style={styles.container}>
     {/* --- Header có nút Back bằng ảnh --- */}

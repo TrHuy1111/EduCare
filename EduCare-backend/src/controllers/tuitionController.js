@@ -189,20 +189,28 @@ export const getInvoicesByStudent = async (req, res) => {
 
 export const getInvoicesByMonth = async (req, res) => {
   try {
-    const { month, year, search } = req.query; // Thêm search
+    // 👇 1. Nhận thêm classId từ query
+    const { month, year, search, classId } = req.query; 
 
-    // 1. Lấy toàn bộ invoice tháng đó (đã populate tên HS, tên Lớp)
-    let invoices = await TuitionInvoice.find({ month, year })
-      .populate("student", "name code") // Ví dụ populate thêm mã HS nếu có
+    // 👇 2. Tạo object query động
+    const query = { month, year };
+    
+    // Nếu có classId (không rỗng) thì thêm vào điều kiện tìm kiếm
+    if (classId) {
+      query.classId = classId;
+    }
+
+    // 3. Truy vấn với filter classId
+    let invoices = await TuitionInvoice.find(query)
+      .populate("student", "name code")
       .populate("classId", "name level");
 
-    // 2. Nếu có từ khóa search -> Lọc thủ công bằng JS (Cách đơn giản nhất)
+    // 4. Lọc tiếp bằng Search text (giữ nguyên logic cũ của bạn)
     if (search) {
       const lowerSearch = search.toLowerCase();
       invoices = invoices.filter((inv) => {
         const studentName = inv.student?.name?.toLowerCase() || "";
         const className = inv.classId?.name?.toLowerCase() || "";
-        // Tìm theo tên HS hoặc tên Lớp
         return studentName.includes(lowerSearch) || className.includes(lowerSearch);
       });
     }
@@ -256,18 +264,23 @@ export const getInvoiceDetail = async (req, res) => {
 
 export const exportTuitionExcel = async (req, res) => {
   try {
-    const { month, year } = req.query;
+    // 👇 1. Nhận thêm classId
+    const { month, year, classId } = req.query;
 
-    // 1. Lấy dữ liệu
-    const invoices = await TuitionInvoice.find({ month, year })
+    // 👇 2. Tạo query lọc
+    const query = { month, year };
+    if (classId) {
+      query.classId = classId;
+    }
+
+    // 3. Tìm kiếm với query đã lọc
+    const invoices = await TuitionInvoice.find(query)
       .populate("student", "name")
-      .populate("classId", "name");
+      .populate("classId", "name"); 
 
-    // 2. Tạo Workbook Excel
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(`HocPhi_T${month}_${year}`);
 
-    // 3. Định nghĩa cột
     worksheet.columns = [
       { header: 'STT', key: 'stt', width: 5 },
       { header: 'Học sinh', key: 'student', width: 25 },
@@ -277,7 +290,6 @@ export const exportTuitionExcel = async (req, res) => {
       { header: 'Ngày đóng', key: 'paidDate', width: 15 },
     ];
 
-    // 4. Đổ dữ liệu
     invoices.forEach((inv, index) => {
       worksheet.addRow({
         stt: index + 1,
@@ -289,10 +301,6 @@ export const exportTuitionExcel = async (req, res) => {
       });
     });
 
-    // Style header cho đẹp (Optional)
-    worksheet.getRow(1).font = { bold: true };
-
-    // 5. Xuất ra buffer base64
     const buffer = await workbook.xlsx.writeBuffer();
     const base64 = buffer.toString('base64');
 

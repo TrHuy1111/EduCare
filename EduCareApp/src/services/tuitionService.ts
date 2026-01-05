@@ -32,9 +32,9 @@ export const getInvoicesByStudent = async (studentId: string) => {
   return axios.get(`${API_URL}/student/${studentId}`, config);
 };
 // 📄 Lấy invoice theo tháng
-export const getInvoicesByMonth = async (month: number, year: number, search?: string) => {
+export const getInvoicesByMonth = async (month: number, year: number, search?: string, classId: string = "") => {
   const config = await getAuthHeader();
-  let url = `${API_URL}/month?month=${month}&year=${year}`;
+  let url = `${API_URL}/month?month=${month}&year=${year}&classId=${classId}`;
   if (search) {
     url += `&search=${encodeURIComponent(search)}`;
   }
@@ -53,8 +53,8 @@ export const payInvoice = async (invoiceId: string) => {
   return axios.patch(`${API_URL}/pay/${invoiceId}`, {}, config);
 };
 // 📄 Xuat file
-export const exportTuition = async (month: number, year: number) => {
+export const exportTuition = async (month: number, year: number, classId: string = "") => {
   const config = await getAuthHeader();
   // Gọi đến endpoint /export mà bạn đã khai báo trong router
-  return axios.get(`${API_URL}/export?month=${month}&year=${year}`, config);
+  return axios.get(`${API_URL}/export?month=${month}&year=${year}&classId=${classId}`, config);
 };

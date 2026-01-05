@@ -8,10 +8,12 @@ import {
   Alert,
   TouchableOpacity,
   ActivityIndicator,
-  TextInput
+  TextInput,Image
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { getInvoicesByMonth, exportTuition } from "../src/services/tuitionService";
+import { getAllClasses } from "../src/services/classService";
 import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
 
@@ -25,11 +27,24 @@ export default function AdminTuitionListScreen() {
   const [loading, setLoading] = useState(false);
 
   const [searchText, setSearchText] = useState("");
+  const [classes, setClasses] = useState<any[]>([]);
+  const [selectedClass, setSelectedClass] = useState("");
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const res = await getAllClasses();
+        setClasses(res.data);
+      } catch (e) { console.log("Err load classes", e)}
+    };
+    fetchClasses();
+  }, []);
+
   const loadInvoices = async () => {
     try {
       setLoading(true);
-      
-      const res = await getInvoicesByMonth(month, year, searchText);
+
+      const res = await getInvoicesByMonth(month, year, searchText, selectedClass);
       setInvoices(res.data);
     } catch (err) {
       console.log("❌ Load invoices error", err);
@@ -43,14 +58,13 @@ export default function AdminTuitionListScreen() {
       loadInvoices();
     }, 500); 
     return () => clearTimeout(timer);
-  }, [searchText, month, year]);
+  }, [searchText, month, year, selectedClass]);
 
   const handleExport = async () => {
   try {
     setLoading(true);
-    
     // 1. Gọi Service lấy file Base64 từ Backend
-    const res = await exportTuition(month, year);
+    const res = await exportTuition(month, year, selectedClass);
     const { fileName, base64 } = res.data;
 
     if (!base64) {
@@ -88,132 +102,129 @@ export default function AdminTuitionListScreen() {
   const renderItem = ({ item }: any) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() =>
-        navigation.navigate("AdminTuitionDetail", {
-          invoiceId: item._id,
-        })
-      }
+      onPress={() => navigation.navigate("AdminTuitionDetail", { invoiceId: item._id })}
     >
       <View style={styles.row}>
         <Text style={styles.student}>{item.student?.name}</Text>
-        <Text
-          style={[
-            styles.status,
-            item.status === "paid" ? styles.paid : styles.pending,
-          ]}
-        >
+        <Text style={[styles.status, item.status === "paid" ? styles.paid : styles.pending]}>
           {item.status.toUpperCase()}
         </Text>
       </View>
-
       <Text style={styles.sub}>
         Lớp: {item.classId?.name} ({item.classId?.level})
       </Text>
-
-      <Text style={styles.amount}>
-        💰 {item.totalAmount.toLocaleString()} VND
-      </Text>
+      <Text style={styles.amount}>💰 {item.totalAmount.toLocaleString()} VND</Text>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      {/* FILTER */}
+      {/* --- TIME FILTER --- */}
       <View style={styles.filterRow}>
-        <TouchableOpacity
-          style={styles.filterBtn}
-          onPress={() => setMonth((m) => (m === 1 ? 12 : m - 1))}
-        >
-          <Text>◀</Text>
+        <TouchableOpacity style={styles.arrowBtn} onPress={() => setMonth((m) => (m === 1 ? 12 : m - 1))}>
+          <Text style={styles.arrowText}>◀</Text>
         </TouchableOpacity>
-
-        <Text style={styles.filterText}>
-          📅 {month}/{year}
-        </Text>
-
-        <TouchableOpacity
-          style={styles.filterBtn}
-          onPress={() => setMonth((m) => (m === 12 ? 1 : m + 1))}
-        >
-          <Text>▶</Text>
+        <Text style={styles.filterText}>📅 {month}/{year}</Text>
+        <TouchableOpacity style={styles.arrowBtn} onPress={() => setMonth((m) => (m === 12 ? 1 : m + 1))}>
+          <Text style={styles.arrowText}>▶</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.searchBox}>
-        <Text style={{marginRight: 8}}>🔍</Text>
-        <TextInput 
-          style={styles.searchInput}
-          placeholder="Tìm tên học sinh hoặc tên lớp..."
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-        <TouchableOpacity style={styles.exportBtn} onPress={handleExport}>
-          <Text style={styles.exportText}>📥 Excel</Text>
-        </TouchableOpacity>
+      {/* --- CLASS FILTER & SEARCH --- */}
+      <View style={{ gap: 10, marginBottom: 10 }}>
+        {/* Dropdown chọn lớp */}
+        <View style={styles.pickerBox}>
+          <Picker
+            selectedValue={selectedClass}
+            onValueChange={(v) => setSelectedClass(v)}
+            style={{ height: 50 }}
+          >
+            <Picker.Item label="-- Tất cả các lớp --" value="" />
+            {classes.map((c) => (
+              <Picker.Item key={c._id} label={c.name} value={c._id} />
+            ))}
+          </Picker>
+        </View>
+
+        {/* Search Box (Bỏ nút Export ở đây) */}
+        <View style={styles.searchBox}>
+          <Text style={{marginRight: 8, fontSize: 18}}>🔍</Text>
+          <TextInput 
+            style={styles.searchInput}
+            placeholder="Tìm tên học sinh..."
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+        </View>
       </View>
 
+      {/* LIST */}
       {loading ? (
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#10B981" style={{marginTop: 20}} />
       ) : invoices.length === 0 ? (
-        <Text style={styles.empty}>Chưa có hóa đơn</Text>
+        <Text style={styles.empty}>Chưa có hóa đơn nào.</Text>
       ) : (
         <FlatList
           data={invoices}
           keyExtractor={(item) => item._id}
           renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 80 }} // Chừa chỗ cho nút FAB
         />
       )}
+
+      {/* 👇 NÚT FAB EXPORT EXCEL (Giống nút +) */}
+      <TouchableOpacity style={styles.fabBtn} onPress={handleExport}>
+        {/* Dùng icon ảnh hoặc text */}
+        <Image 
+          source={require('../assets/icons/excel.png')} // Bạn cần kiếm 1 icon excel.png đẹp
+          style={{ width: 28, height: 28 }} 
+        />
+        {/* Hoặc dùng Text nếu chưa có icon: <Text style={{fontSize: 24}}>📥</Text> */}
+      </TouchableOpacity>
+
     </View>
   );
 }
-// 🧩 Styles
+
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: "#ecfdf5" },
-  filterRow: {  flexDirection: "row", justifyContent: "center", alignItems: "center", marginBottom: 16 },
-  filterBtn: {
-    padding: 10,
-    backgroundColor: "#d1fae5",
-    borderRadius: 8,
-    marginHorizontal: 20,
-    },
-    filterText: { fontSize: 16, fontWeight: "600", color: "#065f46" },
-    card: {
-    backgroundColor: "#fff",
-    padding: 16,    
-    borderRadius: 12,
-    marginBottom: 12,
-        
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    },
-    row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-    student: { fontSize: 18, fontWeight: "600", color: "#065f46" },
-    status: { fontWeight: "700" },
-    paid: { color: "#10b981" },
-    pending: { color: "#f59e0b" },
-    sub: { color: "#6b7280", marginBottom: 8 },
-    amount: { fontWeight: "700", color: "#065f46" },
-    empty: { textAlign: "center", marginTop: 50, color: "#6b7280" },
-    searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#ddd'
-  },
-  searchInput: {
-    flex: 1,
-    height: 40,
-  },
-  exportBtn: {
-    backgroundColor: '#10B981',
+  
+  // Filter Time
+  filterRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginBottom: 12 },
+  arrowBtn: { padding: 10, backgroundColor: "#d1fae5", borderRadius: 8, marginHorizontal: 15 },
+  arrowText: { fontSize: 18, color: "#065f46", fontWeight: "bold" },
+  filterText: { fontSize: 18, fontWeight: "700", color: "#065f46" },
+
+  // Inputs
+  pickerBox: { backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#ddd', overflow: 'hidden' },
+  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: '#ddd', height: 48 },
+  searchInput: { flex: 1, fontSize: 16 },
+
+  // Card
+  card: { backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, elevation: 2 },
+  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
+  student: { fontSize: 16, fontWeight: "700", color: "#065f46" },
+  status: { fontWeight: "700", fontSize: 12 },
+  paid: { color: "#10b981" },
+  pending: { color: "#f59e0b" },
+  sub: { color: "#6b7280", marginBottom: 6, fontSize: 13 },
+  amount: { fontWeight: "800", color: "#065f46", fontSize: 16 },
+  empty: { textAlign: "center", marginTop: 50, color: "#6b7280" },
+
+  fabBtn: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    backgroundColor: '#fff', 
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
-    paddingHorizontal: 15,
-    borderRadius: 8,
-  },
-  exportText: { color: '#fff', fontWeight: 'bold' },
+    alignItems: 'center',
+    elevation: 6, // Bóng đổ Android
+    shadowColor: '#000', // Bóng đổ iOS
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 4,
+  }
 });

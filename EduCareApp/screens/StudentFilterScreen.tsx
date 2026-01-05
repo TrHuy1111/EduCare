@@ -6,19 +6,49 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  TextInput
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { TeacherStackParamList } from "../navigation/TeacherNavigator";
-import Slider from "@react-native-community/slider";
 
 type Range = { min: number; max: number } | null;
-const ensureRange = (r: Range): { min: number; max: number } => {
-  return {
-    min: r?.min ?? 0,
-    max: r?.max ?? 0,
-  };
+
+const RangeInput = ({ label, range, setRange }: any) => {
+  return (
+    <View style={{ marginBottom: 20 }}>
+      <Text style={styles.sectionTitle}>{label}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        {/* Min Input */}
+        <View style={styles.inputWrap}>
+          <Text style={styles.inputLabel}>Từ</Text>
+          <TextInput
+            style={styles.textInput}
+            keyboardType="numeric"
+            placeholder="0"
+            value={range?.min ? String(range.min) : ""}
+            onChangeText={(text) => setRange({ ...range, min: Number(text) })}
+          />
+        </View>
+
+        <Text style={{ fontWeight: "bold", marginTop: 15 }}>➜</Text>
+
+        {/* Max Input */}
+        <View style={styles.inputWrap}>
+          <Text style={styles.inputLabel}>Đến</Text>
+          <TextInput
+            style={styles.textInput}
+            keyboardType="numeric"
+            placeholder="Max"
+            value={range?.max ? String(range.max) : ""}
+            onChangeText={(text) => setRange({ ...range, max: Number(text) })}
+          />
+        </View>
+      </View>
+    </View>
+  );
 };
+
 export default function StudentFilterScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<TeacherStackParamList>>();
   const route = useRoute();
@@ -56,73 +86,16 @@ export default function StudentFilterScreen() {
       </Text>
 
       <Text style={styles.subLabel}>Min</Text>
-      <Slider
-        minimumValue={5}
-        maximumValue={40}
-        step={1}
-        value={weightRange?.min ?? 8}
-        onValueChange={(val) => {
-          const safe = ensureRange(weightRange);
-          setWeightRange({ ...safe, min: val });
-        }}
-        minimumTrackTintColor="#10B981"
-        maximumTrackTintColor="#ccc"
-        thumbTintColor="#047857"
+      <RangeInput 
+        label="Cân nặng (kg)" 
+        range={weightRange} 
+        setRange={setWeightRange} 
       />
 
-      <Text style={styles.subLabel}>Max</Text>
-      <Slider
-        minimumValue={5}
-        maximumValue={40}
-        step={1}
-        value={weightRange?.max ?? 20}
-        onValueChange={(val) => {
-          const safe = ensureRange(weightRange);
-          setWeightRange({ ...safe, max: val });
-        }}
-
-        minimumTrackTintColor="#10B981"
-        maximumTrackTintColor="#ccc"
-        thumbTintColor="#047857"
-      />
-
-      {/* HEIGHT */}
-      <Text style={styles.sectionTitle}>Height (cm)</Text>
-
-      <Text style={{ marginBottom: 4 }}>
-        {heightRange ? `${heightRange.min}cm → ${heightRange.max}cm` : "Choose range"}
-      </Text>
-
-      <Text style={styles.subLabel}>Min</Text>
-      <Slider
-        minimumValue={40}
-        maximumValue={150}
-        step={1}
-        value={heightRange?.min ?? 60}
-        onValueChange={(val) => {
-          const safe = ensureRange(heightRange);
-          setHeightRange({ ...safe, min: val });
-        }}
-
-        minimumTrackTintColor="#10B981"
-        maximumTrackTintColor="#ccc"
-        thumbTintColor="#047857"
-      />
-
-      <Text style={styles.subLabel}>Max</Text>
-      <Slider
-        minimumValue={40}
-        maximumValue={150}
-        step={1}
-        value={heightRange?.max ?? 110}
-        onValueChange={(val) => {
-          const safe = ensureRange(heightRange);
-          setHeightRange({ ...safe, max: val });
-        }}
-
-        minimumTrackTintColor="#10B981"
-        maximumTrackTintColor="#ccc"
-        thumbTintColor="#047857"
+      <RangeInput 
+        label="Chiều cao (cm)" 
+        range={heightRange} 
+        setRange={setHeightRange} 
       />
 
       {/* GENDER */}
@@ -201,4 +174,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  inputWrap: { flex: 1 },
+  inputLabel: { fontSize: 12, color: "#666", marginBottom: 4 },
+  textInput: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    textAlign: "center"
+  }
 });

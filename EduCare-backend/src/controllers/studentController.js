@@ -2,7 +2,7 @@
 
 import Student from "../models/studentModel.js";
 import User from "../models/User.js";
-
+import Class from "../models/classModel.js";
 // 🟢 CREATE STUDENT
 export const createStudent = async (req, res) => {
   try {
@@ -86,6 +86,14 @@ export const getAllStudents = async (req, res) => {
     const { gender, minAge, maxAge, minHeight, maxHeight, minWeight, maxWeight, classId, name } = req.query;
     const query = {};
 
+    if (req.user.role === 'teacher') {
+    
+      const myClasses = await Class.find({ teachers: req.user._id }).select('_id');
+      const myClassIds = myClasses.map(c => c._id);
+
+      query.classId = { $in: myClassIds };
+    }
+
     if (name) {
       query.name = { $regex: name, $options: "i" };
     }
@@ -117,8 +125,14 @@ export const getAllStudents = async (req, res) => {
     }
 
     const students = await Student.find(query)
-      .populate("classId", "name level")
-      .populate("teacher", "name email")
+      .populate({
+        path: "classId",
+        select: "name level teachers",
+        populate: { 
+          path: "teachers", 
+          select: "name email" 
+        }
+      })
       .populate("parents", "name phone email")
       .sort({ createdAt: -1 });
 
@@ -133,8 +147,14 @@ export const getAllStudents = async (req, res) => {
 export const getStudentById = async (req, res) => {
   try {
     const student = await Student.findById(req.params.id)
-      .populate("classId", "name level")
-      .populate("teacher", "name email")
+      .populate({
+        path: "classId",
+        select: "name level teachers",
+        populate: {
+          path: "teachers",
+          select: "name email phone" 
+        }
+      })
       .populate("parents", "name phone email");
 
     if (!student) return res.status(404).json({ message: "Not found" });

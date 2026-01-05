@@ -51,6 +51,14 @@ export default function StudentProfileScreen() {
     );
   }
 
+  const getTeacherNames = () => {
+  const cls = student?.classId;
+  if (cls && typeof cls === 'object' && cls.teachers && cls.teachers.length > 0) {
+    return cls.teachers.map((t: any) => t.name).join(", ");
+  }
+  return "Chưa phân công";
+};
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -82,7 +90,8 @@ export default function StudentProfileScreen() {
                             ? student.classId 
                             : student.classId?.name || "N/A"}
                       </Text>
-
+        <Text style={styles.label}>Teachers</Text>
+        <Text style={styles.value}>{getTeacherNames()}</Text>                      
         <Text style={styles.label}>Address</Text>
         <Text style={styles.value}>{student.address}</Text>
 
