@@ -150,8 +150,6 @@ export default function TeacherFeedbackScreen() {
   // 1. Header Component (Chứa Filter & Calendar)
   const renderHeader = () => (
     <View>
-      <Text style={styles.screenTitle}>📝 Nhận xét hoạt động</Text>
-      
       {/* Chọn Lớp & Ngày */}
       <View style={styles.filterCard}>
         <View style={styles.pickerContainer}>

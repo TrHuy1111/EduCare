@@ -58,7 +58,7 @@ export default function ClassStudentManagerModal({
     try {
       setLoading(true);
       await enrollStudentToClass(classData._id, selectedStudentId);
-      Alert.alert("✅ Thành công", "Đã thêm học sinh vào lớp");
+      //Alert.alert("✅ Thành công", "Đã thêm học sinh vào lớp");
       
       setSelectedStudentId("");
       loadWaitingList();
@@ -99,7 +99,7 @@ export default function ClassStudentManagerModal({
           source={
             item.avatar
               ? { uri: item.avatar }
-              : require("../../assets/icons/student.png") // Đảm bảo đường dẫn đúng
+              : require("../../assets/icons/student.png") 
           }
           style={styles.avatar}
         />

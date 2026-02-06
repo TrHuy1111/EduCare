@@ -91,11 +91,6 @@ export default function AnnouncementListScreen() {
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>📣 Tất cả sự kiện</Text>
-      </View>
-
       {/* LIST */}
       <FlatList
         data={list}

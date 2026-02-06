@@ -45,7 +45,16 @@ export default function EditActivitiesScreen({ route, navigation }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [pickerMode, setPickerMode] = useState<"start" | "end" | null>(null);
 
-  const locations = ["Classroom", "Playground", "Canteen", "Garden"];
+  const locations = [
+    "Lớp học",
+    "Phòng thể chất",
+    "Canteen",
+    "Vườn",
+    "Thư viện",       
+    "Phòng ngủ",
+    "Sân trường",     
+   
+  ];
 
   // Animated values per item (for mount animation)
   const itemAnim = useRef<Record<string, Animated.Value>>({}).current;
@@ -64,7 +73,7 @@ export default function EditActivitiesScreen({ route, navigation }: Props) {
         id: a._id || `local-${i}-${Date.now()}`,
         startTime: a.startTime || "08:00",
         endTime: a.endTime || "09:00",
-        location: a.location || "Classroom",
+        location: a.location || "Lớp học",
         title: a.title || "",
         // keep any other props if needed
         ...a,
@@ -131,14 +140,14 @@ export default function EditActivitiesScreen({ route, navigation }: Props) {
   };
 
   const addActivity = () => {
-    animateLayout();
+    //animateLayout();
     const id = `new-${Date.now()}`;
     itemAnim[id] = new Animated.Value(0);
     const newItem = {
       id,
       startTime: "08:00",
       endTime: "09:00",
-      location: "Classroom",
+      location: "Lớp học",
       title: "",
     };
     setActivities(prev => {
@@ -156,7 +165,7 @@ export default function EditActivitiesScreen({ route, navigation }: Props) {
   };
 
   const deleteActivity = (index: number) => {
-    animateLayout();
+    //animateLayout();
     const id = activities[index]?.id;
     // small fade out animation before removing
     if (id && itemAnim[id]) {
@@ -212,7 +221,7 @@ export default function EditActivitiesScreen({ route, navigation }: Props) {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.cardHeader}>Activity {index + 1}</Text>
+        <Text style={styles.cardHeader}>Hoạt động {index + 1}</Text>
 
         {/* time row */}
         <View style={styles.timeRow}>
@@ -223,7 +232,7 @@ export default function EditActivitiesScreen({ route, navigation }: Props) {
               setPickerMode("start");
             }}
           >
-            <Text style={styles.timeLabel}>Start</Text>
+            <Text style={styles.timeLabel}>Bắt đầu</Text>
             <Text style={styles.timeValue}>{item.startTime}</Text>
           </TouchableOpacity>
 
@@ -234,12 +243,12 @@ export default function EditActivitiesScreen({ route, navigation }: Props) {
               setPickerMode("end");
             }}
           >
-            <Text style={styles.timeLabel}>End</Text>
+            <Text style={styles.timeLabel}>Kết thúc</Text>
             <Text style={styles.timeValue}>{item.endTime}</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.label}>Location</Text>
+        <Text style={styles.label}>Địa điểm</Text>
         <View style={styles.pickerBox}>
           <Picker
             selectedValue={item.location}
@@ -252,7 +261,7 @@ export default function EditActivitiesScreen({ route, navigation }: Props) {
           </Picker>
         </View>
 
-        <Text style={styles.label}>Activity</Text>
+        <Text style={styles.label}>Hoạt động</Text>
         <TextInput
           style={styles.input}
           placeholder="Enter activity"
@@ -321,13 +330,6 @@ export default function EditActivitiesScreen({ route, navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* header with subtle gradient */}
-      <LinearGradient
-        colors={["#E9FFF6", "#E0FFF4"]}
-        style={styles.headerWrap}
-      >
-        <Text style={styles.header}>Edit Activities</Text>
-      </LinearGradient>
 
       <FlatList
         data={activities}
@@ -342,13 +344,13 @@ export default function EditActivitiesScreen({ route, navigation }: Props) {
           style={styles.addInner}
         >
           <Icon name="plus" size={18} color="#fff" />
-          <Text style={styles.addText}> Add Activity</Text>
+          <Text style={styles.addText}> Thêm hoạt động</Text>
         </LinearGradient>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
         <LinearGradient colors={["#2ECC96", "#0EB98F"]} style={styles.saveInner}>
-          <Text style={styles.saveText}>Save All</Text>
+          <Text style={styles.saveText}>Lưu</Text>
         </LinearGradient>
       </TouchableOpacity>
 

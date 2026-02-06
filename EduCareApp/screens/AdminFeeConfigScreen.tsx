@@ -128,8 +128,6 @@ export default function AdminFeeConfigScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>💰 Cấu hình học phí</Text>
-
       <Text style={styles.subTitle}>
         {isExisting
           ? "✏️ Đang chỉnh sửa cấu hình đã tồn tại"

@@ -61,16 +61,6 @@ export default function StudentProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Image
-            source={require('../assets/icons/back.png')}
-            style={{ width: 24, height: 24, marginRight: 8 }}
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerText}>Student Profile</Text>
-      </View>
-
       <Image
         source={
           student.avatar

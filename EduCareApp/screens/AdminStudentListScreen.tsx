@@ -133,17 +133,7 @@ export default function AdminStudentListScreen() {
   
   return (
     <View style={styles.container}>
-    {/* --- Header có nút Back bằng ảnh --- */}
-    <View style={styles.headerRow}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-        <Image
-          source={require('../assets/icons/back.png')} // 👈 đường dẫn icon PNG của bạn
-          style={styles.backIcon}
-        />
-      </TouchableOpacity>
-      <Text style={styles.header}>👩‍🏫 Student List</Text>
-    </View>
-
+   
     <View style={styles.filterContainer}>
         {/* Ô tìm tên */}
         <View style={styles.searchBox}>

@@ -56,7 +56,6 @@ export default function AttendanceDetailScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>📅 Attendance Detail</Text>
       <Text style={styles.dateText}>{date}</Text>
 
       {uniqueStudents.length === 0 ? (
@@ -116,7 +115,7 @@ export default function AttendanceDetailScreen({ route }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: "#F0FFF7" },
   title: { fontSize: 22, fontWeight: "800", color: "#064E3B" },
-  dateText: { color: "#065F46", marginBottom: 16 },
+  dateText: { color: "#065F46", marginBottom: 16 , fontWeight: "700", fontSize: 28, textAlign: "center"},
   empty: { textAlign: "center", marginTop: 20, color: "#656565" },
 
   card: {

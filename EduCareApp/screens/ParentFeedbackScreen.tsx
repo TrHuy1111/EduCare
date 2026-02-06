@@ -1,3 +1,4 @@
+// screens/ParentFeedbackScreen.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
@@ -6,6 +7,7 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { getMyChildren } from "../src/services/studentService";
@@ -51,8 +53,13 @@ export default function ParentFeedbackScreen() {
     try {
       setLoading(true);
       const res = await getFeedbackByStudent(selectedStudent);
-        console.log("FEEDBACK RAW:", res.data);
-        setFeedbacks(res.data || []);
+      
+      // 🛠️ FIX 1: Kiểm tra kỹ cấu trúc dữ liệu trả về
+      // Backend thường trả về { data: [...] } hoặc trực tiếp [...]
+      const list = Array.isArray(res.data) ? res.data : (res.data.data || []);
+      
+      console.log("✅ Loaded Feedbacks:", list.length);
+      setFeedbacks(list);
     } catch (err) {
       console.log("❌ load feedback error", err);
     } finally {
@@ -63,21 +70,24 @@ export default function ParentFeedbackScreen() {
   /* ================= FILTER LOGIC ================= */
   const filteredFeedbacks = useMemo(() => {
     const now = new Date();
+    // Reset giờ của 'now' về 00:00:00 để so sánh ngày chuẩn hơn
+    now.setHours(0,0,0,0);
 
     return feedbacks.filter((f) => {
-      const d = new Date(f.date);
+      // Chuyển đổi ngày từ chuỗi sang Date object
+      const d = new Date(f.date); 
+      d.setHours(0,0,0,0); // Reset giờ của ngày trong feedback
 
       if (filter === "today") {
-        return (
-          d.getDate() === now.getDate() &&
-          d.getMonth() === now.getMonth() &&
-          d.getFullYear() === now.getFullYear()
-        );
+        return d.getTime() === now.getTime();
       }
 
       if (filter === "week") {
+        const dayOfWeek = now.getDay(); // 0 (Sun) -> 6 (Sat)
         const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
+        // Tính ngày thứ 2 đầu tuần (hoặc CN tùy logic)
+        const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); 
+        startOfWeek.setDate(diff);
         startOfWeek.setHours(0, 0, 0, 0);
 
         return d >= startOfWeek;
@@ -95,35 +105,37 @@ export default function ParentFeedbackScreen() {
   }, [feedbacks, filter]);
 
   const getActivityItem = (feedback: any) => {
-  const activityDate = feedback.activityDateId;
-  if (!activityDate || !activityDate.activities) return null;
+    // Kiểm tra an toàn null/undefined
+    const activityDate = feedback.activityDateId;
+    if (!activityDate || !activityDate.activities) return null;
 
-  return activityDate.activities.find(
-    (i: any) => i._id === feedback.activityItemId
-  );
-};
+    return activityDate.activities.find(
+      (i: any) => i._id === feedback.activityItemId
+    );
+  };
 
-  /* ================= UI ================= */
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>💬 Nhận xét của bé</Text>
 
       {/* ===== CHILD PICKER ===== */}
-      {children.length > 1 && (
+      {children.length > 0 && (
         <View style={styles.card}>
           <Text style={styles.label}>Chọn con</Text>
-          <Picker
-            selectedValue={selectedStudent}
-            onValueChange={setSelectedStudent}
-          >
-            {children.map((c) => (
-              <Picker.Item key={c._id} label={c.name} value={c._id} />
-            ))}
-          </Picker>
+          <View style={styles.pickerWrap}>
+            <Picker
+                selectedValue={selectedStudent}
+                onValueChange={setSelectedStudent}
+                style={{ height: 50, width: '100%' }}
+            >
+                {children.map((c) => (
+                <Picker.Item key={c._id} label={c.name} value={c._id} />
+                ))}
+            </Picker>
+          </View>
         </View>
       )}
 
-      {/* ===== FILTER ===== */}
+      {/* ===== FILTER TABS ===== */}
       <View style={styles.filterRow}>
         {[
           { key: "today", label: "Hôm nay" },
@@ -152,58 +164,71 @@ export default function ParentFeedbackScreen() {
 
       {/* ===== LIST ===== */}
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 30 }} />
+        <ActivityIndicator size="large" color="#10B981" style={{ marginTop: 30 }} />
       ) : (
         <FlatList
           data={filteredFeedbacks}
           keyExtractor={(i) => i._id}
           contentContainerStyle={{ paddingBottom: 40 }}
           ListEmptyComponent={
-            <Text style={styles.empty}>Chưa có nhận xét</Text>
-          }
-          renderItem={({ item }) => (
-            <View style={styles.feedbackCard}>
-                {/* Date + Reward */}
-                <View style={styles.rowBetween}>
-                <Text style={styles.date}>{item.date}</Text>
-
-                {item.reward !== "none" && (
-                    <Text style={styles.reward}>
-                    {item.reward === "star" && "⭐ Sao"}
-                    {item.reward === "flower" && "🌸 Hoa hồng"}
-                    {item.reward === "badge" && "🏅 Huy hiệu"}
-                    </Text>
-                )}
-                </View>
-
-                {/* Activity */}
-                {(() => {
-  const activityItem = getActivityItem(item);
-  if (!activityItem) return null;
-
-  return (
-    <View style={styles.activityBox}>
-      <Text style={styles.activityTitle}>
-        📘 {activityItem.title}
-      </Text>
-      <Text style={styles.activityTime}>
-        ⏰ {activityItem.startTime} – {activityItem.endTime}
-      </Text>
-    </View>
-  );
-})()}
-
-                {/* Comment */}
-                <Text style={styles.comment}>
-                {item.comment || "Không có nhận xét"}
-                </Text>
-
-                {/* Teacher */}
-                <Text style={styles.teacher}>
-                👩‍🏫 {item.teacherId?.name || "Giáo viên"}
-                </Text>
+            <View style={styles.emptyContainer}>
+                <Image source={require('../assets/icons/feedback.png')} style={{width: 60, height: 60, opacity: 0.3, tintColor: 'gray'}} />
+                <Text style={styles.empty}>Chưa có nhận xét nào trong thời gian này.</Text>
             </View>
-            )}
+          }
+          renderItem={({ item }) => {
+            // Lấy thông tin activity (nếu có)
+            const activityItem = getActivityItem(item);
+
+            return (
+                <View style={styles.feedbackCard}>
+                    {/* Header: Date & Reward */}
+                    <View style={styles.rowBetween}>
+                        <Text style={styles.date}>📅 {new Date(item.date).toLocaleDateString('vi-VN')}</Text>
+
+                        {item.reward && item.reward !== "none" && (
+                            <View style={styles.rewardBadge}>
+                                <Text style={styles.rewardText}>
+                                {item.reward === "star" && "⭐ "}
+                                {item.reward === "flower" && "🌸 "}
+                                {item.reward === "badge" && "🏅 "}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Activity Section (Chỉ hiện nếu tìm thấy activity) */}
+                    {activityItem ? (
+                        <View style={styles.activityBox}>
+                            <Text style={styles.activityTitle}>📘 {activityItem.title}</Text>
+                            <Text style={styles.activityTime}>
+                                ⏰ {activityItem.startTime} – {activityItem.endTime}
+                            </Text>
+                        </View>
+                    ) : (
+                        // Fallback nếu không có link activity (Vẫn hiện card)
+                        <View style={[styles.activityBox, {backgroundColor: '#F3F4F6'}]}>
+                             <Text style={{color: '#666', fontStyle: 'italic'}}>Hoạt động chung</Text>
+                        </View>
+                    )}
+
+                    {/* Comment Content */}
+                    <View style={styles.commentBox}>
+                        <Text style={styles.commentLabel}>Cô giáo nhận xét:</Text>
+                        <Text style={styles.comment}>
+                            "{item.comment || "Không có lời nhận xét cụ thể."}"
+                        </Text>
+                    </View>
+
+                    {/* Footer: Teacher Name */}
+                    <View style={styles.footer}>
+                        <Text style={styles.teacher}>
+                        👩‍🏫 GV: {item.teacherId?.name || "Giáo viên"}
+                        </Text>
+                    </View>
+                </View>
+            );
+          }}
         />
       )}
     </View>
@@ -217,117 +242,134 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0FDF4",
     padding: 16,
   },
-
-  header: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#065F46",
-    marginBottom: 12,
-  },
-
   card: {
     backgroundColor: "#fff",
     borderRadius: 14,
     padding: 12,
     marginBottom: 14,
+    elevation: 2,
   },
-
   label: {
     fontWeight: "700",
     marginBottom: 6,
     color: "#064E3B",
   },
-
+  pickerWrap: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
   filterRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 14,
   },
-
   filterBtn: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 10,
     marginHorizontal: 4,
     borderRadius: 20,
-    backgroundColor: "#ECFDF5",
+    backgroundColor: "#fff",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: '#E5E7EB'
   },
-
   filterActive: {
     backgroundColor: "#10B981",
+    borderColor: '#10B981'
   },
-
   filterText: {
     fontWeight: "600",
-    color: "#065F46",
+    color: "#6B7280",
+    fontSize: 13
   },
-
   filterTextActive: {
     color: "#fff",
   },
-
   feedbackCard: {
     backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 3,
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowOffset: {width: 0, height: 2},
+    shadowRadius: 4
   },
-
   rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 12,
   },
-
   date: {
     fontWeight: "700",
-    color: "#064E3B",
-  },
-
-  reward: {
-    fontWeight: "700",
-    color: "#10B981",
-  },
-
-  comment: {
-    marginTop: 6,
-    fontSize: 14,
     color: "#374151",
+    fontSize: 15
   },
-
+  rewardBadge: {
+      backgroundColor: '#FEF3C7',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+  },
+  rewardText: {
+    fontWeight: "700",
+    color: "#D97706",
+    fontSize: 12
+  },
+  activityBox: {
+    padding: 10,
+    backgroundColor: "#ECFDF5",
+    borderRadius: 10,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10B981'
+  },
+  activityTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#065F46",
+  },
+  activityTime: {
+    fontSize: 13,
+    color: "#047857",
+    marginTop: 2,
+  },
+  commentBox: {
+      marginBottom: 8
+  },
+  commentLabel: {
+      fontSize: 12,
+      color: '#9CA3AF',
+      marginBottom: 2
+  },
+  comment: {
+    fontSize: 15,
+    color: "#1F2937",
+    fontStyle: 'italic',
+    lineHeight: 22
+  },
+  footer: {
+      borderTopWidth: 1,
+      borderTopColor: '#F3F4F6',
+      paddingTop: 8,
+      marginTop: 4
+  },
   teacher: {
-    marginTop: 6,
-    fontSize: 12,
+    fontSize: 13,
     color: "#6B7280",
+    fontWeight: '500'
   },
-
+  emptyContainer: {
+      alignItems: 'center',
+      marginTop: 60
+  },
   empty: {
-    textAlign: "center",
-    marginTop: 40,
+    marginTop: 16,
     fontStyle: "italic",
     color: "#9CA3AF",
   },
-  activityBox: {
-  marginTop: 6,
-  paddingVertical: 6,
-  paddingHorizontal: 8,
-  backgroundColor: "#ECFDF5",
-  borderRadius: 8,
-},
-
-activityTitle: {
-  fontSize: 14,
-  fontWeight: "700",
-  color: "#065F46",
-},
-
-activityTime: {
-  fontSize: 12,
-  color: "#047857",
-  marginTop: 2,
-},
 });

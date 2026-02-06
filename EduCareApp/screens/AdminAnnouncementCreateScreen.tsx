@@ -23,9 +23,35 @@ export default function AdminAnnouncementCreateScreen({ navigation }: any) {
     image: null as any,
   });
 
-  const [showStart, setShowStart] = useState(false);
-  const [showEnd, setShowEnd] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
+  const [currentField, setCurrentField] = useState<'start' | 'end'>('start');
 
+  const openPicker = (field: 'start' | 'end', mode: 'date' | 'time') => {
+    setCurrentField(field);
+    setPickerMode(mode);
+    setShowPicker(true);
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowPicker(false); // Đóng picker ngay
+    if (!selectedDate) return;
+
+    const targetDate = currentField === 'start' ? form.startTime : form.endTime;
+    
+    const newDate = new Date(targetDate);
+
+    if (pickerMode === 'date') {
+      newDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+    } else {
+      newDate.setHours(selectedDate.getHours(), selectedDate.getMinutes());
+    }
+
+    setForm({ 
+      ...form, 
+      [currentField === 'start' ? 'startTime' : 'endTime']: newDate 
+    });
+  };
   const pickImage = async () => {
     const res = await launchImageLibrary({ mediaType: "photo" });
     if (!res.assets?.[0]) return;
@@ -111,45 +137,59 @@ export default function AdminAnnouncementCreateScreen({ navigation }: any) {
         onChangeText={(t) => setForm({ ...form, location: t })}
       />
 
-      {/* START */}
-      <Text style={styles.label}>Ngày bắt đầu</Text>
-      <TouchableOpacity
-        style={styles.timeBtn}
-        onPress={() => setShowStart(true)}
-      >
-        <Text>📅 {form.startTime.toLocaleDateString("vi-VN")}</Text>
-      </TouchableOpacity>
+      <Text style={styles.label}>Thời gian bắt đầu</Text>
+      <View style={styles.row}>
+        {/* Nút Chọn Ngày */}
+        <TouchableOpacity 
+          style={styles.halfBtn} 
+          onPress={() => openPicker('start', 'date')}
+        >
+          <Text style={styles.btnText}>
+            📅 {form.startTime.toLocaleDateString("vi-VN")}
+          </Text>
+        </TouchableOpacity>
 
-      {showStart && (
+        {/* Nút Chọn Giờ */}
+        <TouchableOpacity 
+          style={styles.halfBtn} 
+          onPress={() => openPicker('start', 'time')}
+        >
+          <Text style={styles.btnText}>
+            ⏰ {form.startTime.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* --- END TIME --- */}
+      <Text style={styles.label}>Thời gian kết thúc</Text>
+      <View style={styles.row}>
+        <TouchableOpacity 
+          style={styles.halfBtn} 
+          onPress={() => openPicker('end', 'date')}
+        >
+          <Text style={styles.btnText}>
+            📅 {form.endTime.toLocaleDateString("vi-VN")}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.halfBtn} 
+          onPress={() => openPicker('end', 'time')}
+        >
+          <Text style={styles.btnText}>
+            ⏰ {form.endTime.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* COMPONENT PICKER CHUNG */}
+      {showPicker && (
         <DateTimePicker
-          value={form.startTime}
-          mode="date"
+          value={currentField === 'start' ? form.startTime : form.endTime}
+          mode={pickerMode} // 'date' hoặc 'time'
           display="default"
-          onChange={(e, date) => {
-            setShowStart(false);
-            if (date) setForm({ ...form, startTime: date });
-          }}
-        />
-      )}
-
-      {/* END */}
-      <Text style={styles.label}>Ngày kết thúc</Text>
-      <TouchableOpacity
-        style={styles.timeBtn}
-        onPress={() => setShowEnd(true)}
-      >
-        <Text>📅 {form.endTime.toLocaleDateString("vi-VN")}</Text>
-      </TouchableOpacity>
-
-      {showEnd && (
-        <DateTimePicker
-          value={form.endTime}
-          mode="date"
-          display="default"
-          onChange={(e, date) => {
-            setShowEnd(false);
-            if (date) setForm({ ...form, endTime: date });
-          }}
+          onChange={handleDateChange}
+          is24Hour={true}
         />
       )}
 
@@ -207,4 +247,24 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   saveText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    gap: 10,
+  },
+  halfBtn: {
+    flex: 1, 
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    alignItems: 'center',
+  },
+  btnText: {
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500'
+  }
 });

@@ -1,8 +1,9 @@
 // src/services/tuitionService.ts
 import axios from "axios";
 import auth from "@react-native-firebase/auth";
+import { API_BASE_URL } from '@env';
 
-const API_URL = "http://192.168.118.1:5000/api/tuition";
+const API_URL = `${API_BASE_URL}/tuition`;
 
 const getAuthHeader = async () => {
   const user = auth().currentUser;
@@ -57,4 +58,9 @@ export const exportTuition = async (month: number, year: number, classId: string
   const config = await getAuthHeader();
   // Gọi đến endpoint /export mà bạn đã khai báo trong router
   return axios.get(`${API_URL}/export?month=${month}&year=${year}&classId=${classId}`, config);
+};
+// doanh thu theo năm
+export const getTuitionStats = async (year: number) => {
+  const config = await getAuthHeader();
+  return axios.get(`${API_URL}/stats?year=${year}`, config);
 };

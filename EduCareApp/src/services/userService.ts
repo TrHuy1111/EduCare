@@ -1,25 +1,31 @@
 //src/services/userService.ts
 import axios from 'axios';
 import auth from '@react-native-firebase/auth';
+import { API_BASE_URL , SERVER_URL} from '@env';
 
-const API_URL = 'http://192.168.118.1:5000/api/user';
-export const BASE_URL = "http://192.168.118.1:5000"; // for image paths
+const API_URL = `${API_BASE_URL}/user`;
+export const BASE_URL = SERVER_URL;
 
-export const syncUserToBackend = async () => {
+export const syncUserToBackend = async (userData?: { name?: string; phone?: string }) => {
   try {
     const user = auth().currentUser;
     if (!user) throw new Error("No Firebase user found");
+    
+    await user.reload();
 
     const idToken = await user.getIdToken(true);
-    console.log('🔥 Your Firebase ID Token:', idToken);
+    
+    // 👇 Gửi kèm userData vào body (nếu có)
     const res = await axios.post(
       `${API_URL}/login`,
-      {},
+      { 
+        ...userData // Merge dữ liệu name, phone vào body
+      }, 
       { headers: { Authorization: `Bearer ${idToken}` } }
     );
 
     console.log("✅ Synced user:", res.data.user);
-    return res.data.user; // 👈 trả về thông tin user từ backend
+    return res.data.user; 
   } catch (err: any) {
     console.error("❌ syncUserToBackend error:", err.response?.data || err.message);
     throw err;

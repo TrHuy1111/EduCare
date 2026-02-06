@@ -18,9 +18,6 @@ const classSchema = new mongoose.Schema(
     // 🔗 Danh sách giáo viên phụ trách
     teachers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 
-    // 👩‍🏫 Giáo viên chủ nhiệm
-    homeroomTeacher: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-
     // ⚠️ RULE CHO MỖI LỚP
     minStudents: { type: Number, required: true },
     maxStudents: { type: Number, required: true },

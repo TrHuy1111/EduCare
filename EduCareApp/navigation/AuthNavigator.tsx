@@ -24,7 +24,6 @@ export default function AuthNavigator() {
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="PhoneAuth" component={PhoneAuthScreen} />
       <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
-
     </Stack.Navigator>
   );
 }

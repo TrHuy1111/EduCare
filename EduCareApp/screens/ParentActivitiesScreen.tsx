@@ -1,3 +1,4 @@
+// screens/ParentActivitiesScreen.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
@@ -6,39 +7,49 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Image
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import { getMyChildren } from "../src/services/studentService";
 import { getActivities } from "../src/services/activityService";
 
-/* ================= HELPERS ================= */
 const getMonday = (date: Date) => {
   const d = new Date(date);
   const day = d.getDay();
-  d.setDate(d.getDate() - ((day + 6) % 7));
-  return d;
+  // Set về thứ 2 đầu tuần
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff));
 };
 
-const formatDateLabel = (date: string) =>
-  new Date(date).toLocaleDateString("vi-VN", {
-    weekday: "long",
-    day: "2-digit",
-    month: "2-digit",
-  });
+// Hàm format hiển thị trên thanh điều hướng (Ví dụ: Thứ Hai, 05/01)
+const formatDateHeader = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const day = d.getDate().toString().padStart(2, '0');
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  
+  const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  const dayName = days[d.getDay()];
 
-/* ================= SCREEN ================= */
+  return `${dayName}, ${day}/${month}`;
+};
+
+// Hàm lấy ngày/tháng cho ô vuông (Badge)
+const getDateParts = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return {
+    day: d.getDate().toString().padStart(2, '0'),
+    month: (d.getMonth() + 1).toString().padStart(2, '0')
+  };
+};
+
 export default function ParentActivitiesScreen() {
   const [children, setChildren] = useState<any[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedClass, setSelectedClass] = useState<any>(null);
 
-  const [weekStart, setWeekStart] = useState<Date>(() =>
-    getMonday(new Date())
-  );
+  const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
   const [activitiesMap, setActivitiesMap] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
-  // 🔥 cache để back / next tuần không lag
   const cacheRef = useRef<{ [key: string]: any }>({});
 
   /* ===== WEEK DATES ===== */
@@ -50,7 +61,7 @@ export default function ParentActivitiesScreen() {
     });
   }, [weekStart]);
 
-  /* ===== LOAD CHILDREN ===== */
+  /* ===== LOAD INITIAL DATA ===== */
   useEffect(() => {
     (async () => {
       try {
@@ -59,21 +70,28 @@ export default function ParentActivitiesScreen() {
         setChildren(list);
 
         if (list.length > 0) {
-          const first = list[0];
-          setSelectedStudent(first._id);
-          setSelectedClass(
-            typeof first.classId === "string"
-              ? { _id: first.classId }
-              : first.classId
-          );
+          handleSelectStudent(list[0]);
         }
-      } catch {}
+      } catch (e) {
+        console.log("Error loading children", e);
+      }
     })();
   }, []);
 
+  const handleSelectStudent = (student: any) => {
+    setSelectedStudent(student);
+    const classInfo = typeof student.classId === "string" 
+        ? { _id: student.classId } 
+        : student.classId;
+    setSelectedClass(classInfo);
+  };
+
   /* ===== LOAD ACTIVITIES ===== */
   useEffect(() => {
-    if (!selectedClass?._id) return;
+    if (!selectedClass?._id) {
+        setLoading(false);
+        return;
+    }
 
     const key = `${selectedClass._id}-${weekDates[0]}`;
     if (cacheRef.current[key]) {
@@ -85,7 +103,6 @@ export default function ParentActivitiesScreen() {
     (async () => {
       try {
         setLoading(true);
-
         const responses = await Promise.all(
           weekDates.map((d) => getActivities(selectedClass._id, d))
         );
@@ -100,216 +117,251 @@ export default function ParentActivitiesScreen() {
 
         cacheRef.current[key] = map;
         setActivitiesMap(map);
+      } catch (err) {
+          console.log("Error loading activities", err);
       } finally {
         setLoading(false);
       }
     })();
   }, [selectedClass, weekDates]);
 
-  /* ================= UI ================= */
-  if (loading) {
-    return <ActivityIndicator size="large" style={{ marginTop: 80 }} />;
+  if (loading && !selectedClass) {
+    return <ActivityIndicator size="large" color="#10B981" style={{ marginTop: 80 }} />;
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.header}>📅 Hoạt động của bé</Text>
-
-      {/* ===== SELECT CHILD ===== */}
-      {children.length > 1 && (
-        <View style={styles.card}>
-          <Text style={styles.label}>Chọn con</Text>
-          <Picker
-            selectedValue={selectedStudent}
-            onValueChange={(v) => {
-              const child = children.find((c) => c._id === v);
-              setSelectedStudent(v);
-              setSelectedClass(
-                typeof child.classId === "string"
-                  ? { _id: child.classId }
-                  : child.classId
-              );
-            }}
-          >
-            {children.map((c) => (
-              <Picker.Item
-                key={c._id}
-                label={`${c.name} (${c.classId?.name})`}
-                value={c._id}
-              />
+    <View style={styles.container}>
+      {/* 1. CHILD SELECTOR */}
+      <View style={styles.headerSection}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{paddingRight: 20}}>
+            {children.map((child) => (
+                <TouchableOpacity 
+                    key={child._id} 
+                    style={[
+                        styles.childBtn, 
+                        selectedStudent?._id === child._id && styles.childBtnActive
+                    ]}
+                    onPress={() => handleSelectStudent(child)}
+                >
+                    <Image 
+                        source={child.avatar ? {uri: child.avatar} : require('../assets/icons/student.png')} 
+                        style={styles.childAvatar}
+                    />
+                    <Text style={[
+                        styles.childName, 
+                        selectedStudent?._id === child._id && styles.childNameActive
+                    ]}>
+                        {child.name}
+                    </Text>
+                </TouchableOpacity>
             ))}
-          </Picker>
-        </View>
-      )}
-
-      {/* ===== WEEK NAV ===== */}
-      <View style={styles.weekNav}>
-        <TouchableOpacity
-          onPress={() =>
-            setWeekStart((d) => new Date(d.setDate(d.getDate() - 7)))
-          }
-        >
-          <Text style={styles.weekBtn}>◀ Tuần trước</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.weekTitle}>
-          Tuần {formatDateLabel(weekDates[0])}
-        </Text>
-
-        <TouchableOpacity
-          onPress={() =>
-            setWeekStart((d) => new Date(d.setDate(d.getDate() + 7)))
-          }
-        >
-          <Text style={styles.weekBtn}>Tuần sau ▶</Text>
-        </TouchableOpacity>
+        </ScrollView>
       </View>
 
-      {/* ===== ACTIVITIES ===== */}
-      {weekDates.map((date) => {
-        const list = activitiesMap[date] || [];
-        const has = list.length > 0;
-
-        return (
-          <View key={date} style={styles.dayBlock}>
-            <View style={styles.dayHeader}>
-              <Text style={styles.dayTitle}>{formatDateLabel(date)}</Text>
-              {has && <View style={styles.dot} />}
+      <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
+        {/* 2. WEEK NAV */}
+        <View style={styles.weekNavCard}>
+            <TouchableOpacity onPress={() => setWeekStart((d) => new Date(d.setDate(d.getDate() - 7)))}>
+                <Text style={styles.navArrow}>◀</Text>
+            </TouchableOpacity>
+            
+            <View style={{alignItems: 'center'}}>
+                <Text style={styles.weekLabel}>LỊCH HOẠT ĐỘNG</Text>
+                <Text style={styles.weekRange}>
+                   {getDateParts(weekDates[0]).day}/{getDateParts(weekDates[0]).month} - {getDateParts(weekDates[6]).day}/{getDateParts(weekDates[6]).month}
+                </Text>
             </View>
 
-            {!has ? (
-              <Text style={styles.empty}>— Không có hoạt động —</Text>
-            ) : (
-              list.map((a: any, idx: number) => (
-                <View key={idx} style={styles.timelineRow}>
-                  <View style={styles.timeCol}>
-                    <Text style={styles.time}>{a.startTime}</Text>
-                    <Text style={styles.timeSub}>{a.endTime}</Text>
-                  </View>
+            <TouchableOpacity onPress={() => setWeekStart((d) => new Date(d.setDate(d.getDate() + 7)))}>
+                <Text style={styles.navArrow}>▶</Text>
+            </TouchableOpacity>
+        </View>
 
-                  <View style={styles.line} />
+        {loading ? (
+             <ActivityIndicator size="large" color="#10B981" style={{marginTop: 40}} />
+        ) : (
+            /* 3. TIMELINE LIST */
+            <View style={styles.timelineContainer}>
+                {weekDates.map((date) => {
+                    const list = activitiesMap[date] || [];
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const isToday = todayStr === date;
+                    const isWeekend = new Date(date).getDay() === 0 || new Date(date).getDay() === 6;
+                    
+                    // Ẩn ngày cuối tuần nếu không có hoạt động để đỡ dài
+                    if (list.length === 0 && isWeekend) return null;
 
-                  <View style={styles.activityCard}>
-                    <Text style={styles.title}>{a.title}</Text>
-                    <Text style={styles.location}>📍 {a.location}</Text>
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-        );
-      })}
-    </ScrollView>
+                    // 🛠️ FIX LỖI UI NGÀY THÁNG Ở ĐÂY
+                    const { day, month } = getDateParts(date);
+
+                    return (
+                        <View key={date} style={styles.dayBlock}>
+                            {/* Date Header */}
+                            <View style={styles.dayHeader}>
+                                {/* Ô vuông ngày tháng */}
+                                <View style={[styles.dateBadge, isToday && styles.dateBadgeToday]}>
+                                    <Text style={[styles.dateNum, isToday && {color: '#fff'}]}>
+                                        {day}
+                                    </Text>
+                                    <Text style={[styles.dateMonth, isToday && {color: '#E6FFFA'}]}>
+                                        T{month}
+                                    </Text>
+                                </View>
+
+                                <View style={{flex: 1, marginLeft: 12}}>
+                                    <Text style={[styles.dayName, isToday && {color: '#10B981', fontWeight:'800'}]}>
+                                        {formatDateHeader(date)} {isToday ? "(Hôm nay)" : ""}
+                                    </Text>
+                                    {list.length === 0 && (
+                                        <Text style={styles.noActivityText}>Không có hoạt động</Text>
+                                    )}
+                                </View>
+                            </View>
+
+                            {/* Activities Timeline */}
+                            <View style={styles.activityList}>
+                                {list.map((a: any, idx: number) => (
+                                    <View key={idx} style={styles.timelineRow}>
+                                        {/* Time Column */}
+                                        <View style={styles.timeCol}>
+                                            <Text style={styles.startTime}>{a.startTime}</Text>
+                                            <Text style={styles.endTime}>{a.endTime}</Text>
+                                        </View>
+
+                                        {/* Line & Dot */}
+                                        <View style={styles.timelineLine}>
+                                            <View style={styles.timelineDot} />
+                                            {/* Đường kẻ nối */}
+                                            {idx < list.length - 1 && <View style={styles.verticalLine} />}
+                                        </View>
+
+                                        {/* Content Card */}
+                                        <View style={styles.cardWrapper}>
+                                            <View style={styles.activityCard}>
+                                                <Text style={styles.activityTitle}>{a.title}</Text>
+                                                <View style={styles.locationRow}>
+                                                    <Text style={{fontSize: 12}}>📍</Text>
+                                                    <Text style={styles.locationText}>{a.location || "Tại lớp"}</Text>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    );
+                })}
+                <View style={{height: 40}}/>
+            </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
-/* ================= STYLES ================= */
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: "#E6FDF3" },
+  container: { flex: 1, backgroundColor: "#E6FDF3" },
+  
+  /* HEADER CHILD SELECTOR */
+  headerSection: {
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    elevation: 2,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 2,
+    zIndex: 10
+  },
+  childBtn: {
+    flexDirection: 'row', alignItems: 'center',
+    padding: 6, paddingRight: 12,
+    marginRight: 10, borderRadius: 20,
+    backgroundColor: '#f3f4f6', borderWidth: 1, borderColor: 'transparent'
+  },
+  childBtnActive: {
+    backgroundColor: '#ECFDF5', borderColor: '#10B981'
+  },
+  childAvatar: { width: 32, height: 32, borderRadius: 16, marginRight: 8 },
+  childName: { fontWeight: '600', color: '#666', fontSize: 13 },
+  childNameActive: { color: '#065F46' },
 
-  header: {
-    fontSize: 22,
-    fontWeight: "800",
-    marginBottom: 16,
-    color: "",
+  body: { flex: 1, padding: 16 },
+
+  /* WEEK NAV */
+  weekNavCard: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: '#fff', borderRadius: 16,
+    padding: 16, marginBottom: 20,
+    elevation: 3, shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: {width: 0, height: 2}
+  },
+  navArrow: { fontSize: 20, color: '#10B981', paddingHorizontal: 10 },
+  weekLabel: { fontSize: 12, color: '#9CA3AF', marginBottom: 4, fontWeight: '600' },
+  weekRange: { fontSize: 16, fontWeight: '800', color: '#064E3B' },
+
+  timelineContainer: { paddingBottom: 20 },
+  dayBlock: { marginBottom: 24 },
+  
+  dayHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+
+  dateBadge: {
+    backgroundColor: '#fff', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    width: 54, 
+    height: 54, 
+    borderRadius: 14,
+    elevation: 2, 
+    borderWidth: 1, 
+    borderColor: '#E5E7EB',
+    paddingVertical: 4
+  },
+  dateBadgeToday: { 
+    backgroundColor: '#10B981', 
+    borderColor: '#10B981',
+    elevation: 4
+  },
+  dateNum: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: '#374151',
+    lineHeight: 24 
+  },
+  dateMonth: { 
+    fontSize: 11, 
+    color: '#9CA3AF', 
+    fontWeight: '600',
+    marginTop: 0 
+  },
+  
+  dayName: { fontSize: 16, fontWeight: '700', color: '#374151' },
+  noActivityText: { fontSize: 13, color: '#9CA3AF', fontStyle: 'italic', marginTop: 4 },
+
+  activityList: { paddingLeft: 10 }, 
+  
+  timelineRow: { flexDirection: 'row', marginBottom: 0 },
+  
+  timeCol: { width: 50, alignItems: 'flex-end', paddingRight: 10, paddingTop: 2 },
+  startTime: { fontSize: 14, fontWeight: '700', color: '#064E3B' },
+  endTime: { fontSize: 11, color: '#6B7280' },
+
+  timelineLine: { alignItems: 'center', width: 20 },
+  timelineDot: {
+    width: 12, height: 12, borderRadius: 6,
+    backgroundColor: '#fff', borderWidth: 3, borderColor: '#10B981',
+    zIndex: 2, marginTop: 4
+  },
+  verticalLine: {
+    width: 2, flex: 1, backgroundColor: '#D1FAE5',
+    position: 'absolute', top: 16, bottom: -4, left: 9
   },
 
-  card: {
-    backgroundColor: "#fff",
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-
-  label: { fontWeight: "600", marginBottom: 6 },
-
-  weekNav: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 18,
-  },
-
-  weekBtn: {
-    color: "#047857",
-    fontWeight: "700",
-  },
-
-  weekTitle: {
-    fontWeight: "700",
-    color: "#064E3B",
-  },
-
-  dayBlock: { marginBottom: 18 },
-
-  dayHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-
-  dayTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#047857",
-  },
-
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#10B981",
-    marginLeft: 8,
-  },
-
-  timelineRow: {
-    flexDirection: "row",
-    marginBottom: 12,
-  },
-
-  timeCol: {
-    width: 60,
-    alignItems: "flex-end",
-  },
-
-  time: {
-    fontWeight: "700",
-    color: "#064E3B",
-  },
-
-  timeSub: {
-    fontSize: 12,
-    color: "#6B7280",
-  },
-
-  line: {
-    width: 2,
-    backgroundColor: "#10B981",
-    marginHorizontal: 10,
-    borderRadius: 1,
-  },
-
+  cardWrapper: { flex: 1, paddingBottom: 16 },
   activityCard: {
-    flex: 1,
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 12,
+    backgroundColor: '#fff', borderRadius: 12, padding: 12,
+    marginLeft: 8,
+    borderLeftWidth: 4, borderLeftColor: '#34D399',
+    elevation: 2, shadowColor: '#000', shadowOpacity: 0.05
   },
-
-  title: {
-    fontSize: 15,
-    color: "#047857",
-    fontWeight: "600",
-  },
-
-  location: {
-    fontSize: 13,
-    marginTop: 2,
-    color: "#444",
-  },
-
-  empty: {
-    fontStyle: "italic",
-    color: "#9CA3AF",
-  },
+  activityTitle: { fontSize: 15, fontWeight: '600', color: '#1F2937', marginBottom: 4 },
+  locationRow: { flexDirection: 'row', alignItems: 'center' },
+  locationText: { fontSize: 12, color: '#6B7280', marginLeft: 4 },
 });

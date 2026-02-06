@@ -46,15 +46,6 @@ export default function AdminAnnouncementListScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-        <View style={{ height: 50, justifyContent: 'center', marginBottom: 10 }}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Image
-                source={require('../assets/icons/back.png')} 
-                style={styles.backIcon}
-              />
-            </TouchableOpacity>
-            <Text style={styles.header}>Quản lý thông báo</Text>
-        </View>
       <TouchableOpacity
         style={styles.addBtn}
         onPress={() => navigation.navigate("AdminAnnouncementCreate")}

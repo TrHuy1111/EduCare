@@ -34,12 +34,22 @@ export default function AccountScreen() {
   if (!user) return null;
 
   const handleLogout = async () => {
-    try {
-      await auth().signOut();
-      await GoogleSignin.signOut();
-    } catch (e: any) {
-      Alert.alert("Error", e.message);
-    }
+    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Đồng ý",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await auth().signOut();
+            try { await GoogleSignin.signOut(); } catch (e) {} 
+            
+          } catch (e: any) {
+            Alert.alert("Lỗi đăng xuất", e.message);
+          }
+        },
+      },
+    ]);
   };
 
   return (

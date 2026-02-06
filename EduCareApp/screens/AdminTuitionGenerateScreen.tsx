@@ -56,8 +56,6 @@ export default function AdminTuitionGenerateScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🧾 Generate Tuition</Text>
-
       <Text style={styles.label}>Tháng</Text>
       <Picker selectedValue={month} onValueChange={setMonth}>
         {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (

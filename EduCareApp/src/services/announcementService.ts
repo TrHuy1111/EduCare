@@ -1,9 +1,10 @@
 import axios from "axios";
 import auth from "@react-native-firebase/auth";
+import { API_BASE_URL , SERVER_URL} from '@env';
 
-const API_URL = "http://192.168.118.1:5000/api/announcements";
+const API_URL = `${API_BASE_URL}/announcements`;
 
-export const BASE_URL = "http://192.168.118.1:5000";// for image paths
+export const BASE_URL = SERVER_URL;
 
 // Helper to get auth header
 const getAuthHeader = async () => {

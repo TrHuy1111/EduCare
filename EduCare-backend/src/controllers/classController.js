@@ -48,7 +48,6 @@ export const getAllClasses = async (req, res) => {
     const classes = await Class.find()
       .populate("teachers", "name email")
       .populate("students", "name avatar gender")
-      .populate("homeroomTeacher", "name email");
 
     res.status(200).json(classes);
   } catch (err) {
@@ -258,5 +257,23 @@ export const getClassCamera = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+export const getClassDetailForParent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const classData = await Class.findById(id)
+      .populate("teachers", "name email phone image")       
+      .select("name level description room image");
+
+    if (!classData) {
+      return res.status(404).json({ message: "Không tìm thấy lớp học" });
+    }
+
+    res.json(classData);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server", error: err.message });
   }
 };

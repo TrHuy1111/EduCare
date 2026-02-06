@@ -78,20 +78,11 @@ export default function StudentFilterScreen() {
         <Text style={styles.back}>←</Text>
       </TouchableOpacity>
 
-      {/* WEIGHT */}
-      <Text style={styles.sectionTitle}>Weight (kg)</Text>
-
-      <Text style={{ marginBottom: 4 }}>
-        {weightRange ? `${weightRange.min}kg → ${weightRange.max}kg` : "Choose range"}
-      </Text>
-
-      <Text style={styles.subLabel}>Min</Text>
       <RangeInput 
         label="Cân nặng (kg)" 
         range={weightRange} 
         setRange={setWeightRange} 
       />
-
       <RangeInput 
         label="Chiều cao (cm)" 
         range={heightRange} 
@@ -99,7 +90,7 @@ export default function StudentFilterScreen() {
       />
 
       {/* GENDER */}
-      <Text style={styles.sectionTitle}>Genders</Text>
+      <Text style={styles.sectionTitle}>Giới tính</Text>
       <View style={styles.row}>
         {["male", "female"].map((g) => (
           <TouchableOpacity
@@ -107,20 +98,20 @@ export default function StudentFilterScreen() {
             style={[styles.option, gender === g && styles.optionActive]}
             onPress={() => setGender(gender === g ? null : g)}
           >
-            <Text style={styles.optionText}>{g === "male" ? "Boys" : "Girls"}</Text>
+            <Text style={styles.optionText}>{g === "male" ? "Nam" : "Nữ"}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
       {/* AGE */}
-      <Text style={styles.sectionTitle}>Age</Text>
+      <Text style={styles.sectionTitle}>Tuổi</Text>
       <View style={styles.row}>
         {[
-          { label: "0 - 12 months", minMonths: 0, maxMonths: 12 },
-          { label: "1 - 2 years", minMonths: 12, maxMonths: 24 },
-          { label: "2 - 3 years", minMonths: 24, maxMonths: 36 },
-          { label: "3 - 4 years", minMonths: 36, maxMonths: 48 },
-          { label: "4 - 5 years", minMonths: 48, maxMonths: 60 },
+          { label: "0 - 12 tháng", minMonths: 0, maxMonths: 12 },
+          { label: "1 - 2 năm", minMonths: 12, maxMonths: 24 },
+          { label: "2 - 3 năm", minMonths: 24, maxMonths: 36 },
+          { label: "3 - 4 năm", minMonths: 36, maxMonths: 48 },
+          { label: "4 - 5 năm", minMonths: 48, maxMonths: 60 },
         ].map((range) => (
           <TouchableOpacity
             key={range.label}
@@ -138,7 +129,7 @@ export default function StudentFilterScreen() {
       </View>
 
       <TouchableOpacity style={styles.saveBtn} onPress={saveFilters}>
-        <Text style={styles.saveText}>Save</Text>
+        <Text style={styles.saveText}>Lưu</Text>
       </TouchableOpacity>
     </ScrollView>
   );

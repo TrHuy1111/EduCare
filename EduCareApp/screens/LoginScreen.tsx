@@ -44,8 +44,6 @@ export default function LoginScreen() {
       
       console.log("🔹 Đang sync với Backend...");
       const userBackend = await syncUserToBackend();
-
-      // ... (Phần điều hướng giữ nguyên) ...
       const role = userBackend.role;
       if (role === 'admin') navigation.replace('AdminApp' as any);
       else if (role === 'teacher') navigation.replace('TeacherApp' as any);
@@ -54,7 +52,7 @@ export default function LoginScreen() {
     } catch (err: any) {
       console.log("❌ Login Failed:", err);
       
-      // Fail-safe logout logic (giữ nguyên)
+      // Fail-safe logout logic 
       if (auth().currentUser) {
         await auth().signOut(); 
       }
@@ -62,7 +60,6 @@ export default function LoginScreen() {
       // XỬ LÝ THÔNG BÁO LỖI 
       let msg = "Đăng nhập thất bại";
       
-      // Firebase trả về các mã lỗi sau:
       switch (err.code) {
         case 'auth/invalid-credential': 
         case 'auth/user-not-found':
@@ -97,28 +94,28 @@ export default function LoginScreen() {
       setLoading(true);
       setError(null);
 
-      // 1️⃣ Check Google Services
+      //  Check Google Services
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       
-      // 2️⃣ Mở popup Google đăng nhập
-      // const { idToken } = await GoogleSignin.signIn(); // Cũ
-      const signInResult = await GoogleSignin.signIn(); // Mới (tuỳ phiên bản thư viện)
+      //  popup Google 
+      // const { idToken } = await GoogleSignin.signIn();
+      const signInResult = await GoogleSignin.signIn(); 
       const idToken = signInResult.data?.idToken;
 
       if (!idToken) {
         throw new Error('No ID token found');
       }
 
-      // 3️⃣ Tạo Credential và Login vào Firebase
+      // Tạo Credential và Login vào Firebase
       const googleCredential = auth.GoogleAuthProvider.credential(idToken);
       console.log("🔹 Đang login Firebase với Google...");
       await auth().signInWithCredential(googleCredential);
 
-      // 4️⃣ SYNC VỚI BACKEND (QUAN TRỌNG)
+      // SYNC VỚI BACKEND 
       console.log("🔹 Đang sync Google User với Backend...");
       const userBackend = await syncUserToBackend();
 
-      // 5️⃣ Điều hướng theo Role
+      //  Điều hướng theo Role
       const role = userBackend.role;
       if (role === 'admin') navigation.replace('AdminApp' as any);
       else if (role === 'teacher') navigation.replace('TeacherApp' as any);

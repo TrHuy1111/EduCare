@@ -22,22 +22,42 @@ export default function RegisterScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const handleRegister = async () => {
-  setLoading(true);
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth(), email.trim(), password);
-    await userCredential.user.updateProfile({ displayName: fullname });
+    setLoading(true);
+    try {
+      // 1. Tạo user trên Firebase
+      const userCredential = await createUserWithEmailAndPassword(auth(), email.trim(), password);
+      
+      // 2. Cập nhật profile Firebase (để phòng hờ)
+      await userCredential.user.updateProfile({ displayName: fullname });
 
-    // ✅ Gửi thông tin Firebase user lên backend
-    await syncUserToBackend();
+      console.log("🔹 Đang sync User với Backend...");
+      
+      // 3. 👇 QUAN TRỌNG: Truyền thẳng fullname vào đây
+      const userBackend = await syncUserToBackend({ 
+        name: fullname, 
+        phone: phone 
+      });
 
-    Alert.alert("✅ Success", "Account created successfully!");
-  } catch (e: any) {
-    console.log("❌ Register error:", e.message);
-    setError(e.message);
-  } finally {
-    setLoading(false);
-  }
-};
+      Alert.alert("✅ Success", "Tạo tài khoản thành công!", [
+        {
+          text: "OK",
+          onPress: () => {
+             // Chuyển màn hình dựa vào role
+             const role = userBackend.role;
+             if (role === 'admin') navigation.replace('AdminApp' as any);
+             else if (role === 'teacher') navigation.replace('TeacherApp' as any);
+             else navigation.replace('ParentApp' as any);
+          }
+        }
+      ]);
+
+    } catch (e: any) {
+      console.log("❌ Register error:", e.message);
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
   const signUpWithGoogle = async () => {
   try {
     setError(null);

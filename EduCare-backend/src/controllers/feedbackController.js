@@ -128,7 +128,7 @@ export const getFeedbackStats = async (req, res) => {
   try {
     const { classId, from, to } = req.query;
 
-    console.log("📊 STATS PARAMS:", { classId, from, to });
+    //console.log("📊 STATS PARAMS:", { classId, from, to });
 
     if (!classId || !from || !to) {
       return res.status(400).json({ message: "Missing params" });
@@ -151,7 +151,7 @@ export const getFeedbackStats = async (req, res) => {
       },
     ]);
 
-    console.log("📊 RAW SUMMARY AGG:", summaryAgg);
+    //console.log("📊 RAW SUMMARY AGG:", summaryAgg);
 
     const summary = { star: 0, flower: 0, badge: 0 };
     summaryAgg.forEach((i) => {
@@ -200,7 +200,7 @@ export const getFeedbackStats = async (req, res) => {
       { $sort: { totalCount: -1 } } // 🔥 Sắp xếp học sinh có nhiều huy hiệu nhất lên đầu
     ]);
 
-    console.log("📊 RAW RANKING AGG:", rankingAgg);
+    //console.log("📊 RAW RANKING AGG:", rankingAgg);
 
     const ranking = rankingAgg.map((r) => {
       const base = { star: 0, flower: 0, badge: 0 };

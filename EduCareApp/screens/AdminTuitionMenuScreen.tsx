@@ -28,12 +28,17 @@ export default function AdminTuitionMenuScreen() {
       color: "#FEF3C7", // Vàng nhạt
       textColor: "#B45309",
     },
+    {
+    title: "📊 Thống kê Doanh thu",
+    desc: "Biểu đồ thu chi theo tháng và năm",
+    route: "AdminTuitionStats", // Tên route mới (nhớ khai báo trong AdminNavigator nhé)
+    color: "#E0E7FF", // Màu tím nhạt
+    textColor: "#4338CA",
+  },
   ];
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>💰 Quản lý Tài chính</Text>
-      
       <View style={styles.list}>
         {menuItems.map((item, index) => (
           <TouchableOpacity

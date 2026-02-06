@@ -53,11 +53,9 @@ export const generateMonthlyTuition = async (req, res) => {
       // Nếu ngày nghỉ học trước ngày đầu tháng -> Bỏ qua
       if (s.endDate && s.endDate < monthStart) continue;
 
-      // 🛑 Check trùng hóa đơn
       const exists = await TuitionInvoice.findOne({ student: s._id, month, year });
       if (exists) continue;
 
-      // 🎯 Tìm phí theo TARGET LEVEL (Không dùng classId nữa)
       const levelFeeObj = feeConfig.levelFees.find(f => f.level === s.targetLevel);
       if (!levelFeeObj) {
         console.log(`⚠️ Không tìm thấy giá cho level ${s.targetLevel} của bé ${s.name}`);
@@ -312,5 +310,50 @@ export const exportTuitionExcel = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Lỗi xuất file" });
+  }
+};
+
+export const getTuitionStats = async (req, res) => {
+  try {
+    const { year } = req.query;
+    
+    if (!year) return res.status(400).json({ message: "Thiếu năm" });
+
+    // Aggregate: Gom nhóm theo tháng
+    const stats = await TuitionInvoice.aggregate([
+      { 
+        $match: { year: parseInt(year) } // Lọc theo năm
+      },
+      {
+        $group: {
+          _id: "$month", // Gom theo tháng
+          totalPaid: {
+            $sum: { $cond: [{ $eq: ["$status", "paid"] }, "$totalAmount", 0] }
+          },
+          totalPending: {
+            $sum: { $cond: [{ $eq: ["$status", "pending"] }, "$totalAmount", 0] }
+          },
+          totalExpected: { $sum: "$totalAmount" }
+        }
+      },
+      { $sort: { _id: 1 } } // Sắp xếp từ tháng 1 -> 12
+    ]);
+
+    // Format lại dữ liệu trả về mảng đủ 12 tháng (để vẽ biểu đồ không bị lệch)
+    const formattedStats = Array.from({ length: 12 }, (_, i) => {
+      const month = i + 1;
+      const data = stats.find(s => s._id === month);
+      return {
+        month: `T${month}`,
+        paid: data ? data.totalPaid : 0,
+        pending: data ? data.totalPending : 0,
+        total: data ? data.totalExpected : 0
+      };
+    });
+
+    res.json(formattedStats);
+  } catch (err) {
+    console.error("Stats Error:", err);
+    res.status(500).json({ error: err.message });
   }
 };

@@ -6,7 +6,8 @@ import {
   getInvoicesByMonth,
   payInvoice,
   getInvoiceDetail,
-  exportTuitionExcel
+  exportTuitionExcel,
+  getTuitionStats
 } from "../controllers/tuitionController.js";
 import { checkRole } from "../middlewares/checkRole.js";
 const router = express.Router();
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post("/generate", authMiddleware, checkRole(['admin']), generateMonthlyTuition);
 router.get("/month", authMiddleware, checkRole(['admin']), getInvoicesByMonth);
 router.get("/export", authMiddleware, checkRole(['admin']), exportTuitionExcel);
+router.get("/stats", authMiddleware, checkRole(['admin']), getTuitionStats);
 // 👨‍👩‍👧 PARENT / STUDENT
 router.get("/student/:studentId", authMiddleware, getInvoicesByStudent);
 

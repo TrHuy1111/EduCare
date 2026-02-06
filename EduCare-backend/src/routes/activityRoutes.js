@@ -1,6 +1,7 @@
 import express from "express";
 import { getActivitiesByClassAndDate, saveActivities } from "../controllers/activityController.js";
 import { authMiddleware } from "../middlewares/auth.js";
+import { checkRole } from "../middlewares/checkRole.js";
 const router = express.Router();
 
 router.get("/:classId/:date", authMiddleware,getActivitiesByClassAndDate);

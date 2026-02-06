@@ -81,8 +81,6 @@ export default function TeacherActivitiesScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Activities</Text>
-
       {/* CLASS DROPDOWN */}
       <Text style={styles.label}>Choose class</Text>
             <View style={styles.pickerBox}>

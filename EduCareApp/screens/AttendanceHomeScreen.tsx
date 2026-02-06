@@ -55,8 +55,6 @@ export default function AttendanceHomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>📆 Attendance</Text>
-
       {/* CLASS PICKER */}
       <Text style={styles.label}>Chọn lớp</Text>
       <View style={styles.pickerBox}>

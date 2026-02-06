@@ -27,7 +27,7 @@ const fileFilter = (req, file, cb) => {
 
 const uploadUserAvatar = multer({
   storage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 2MB
   fileFilter,
 });
 

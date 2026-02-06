@@ -1,7 +1,8 @@
 import axios from "axios";
 import auth from "@react-native-firebase/auth";
+import { API_BASE_URL } from '@env';
 
-const API_URL = "http://192.168.118.1:5000/api/notifications";
+const API_URL = `${API_BASE_URL}/notifications`;
 
 const getAuthHeader = async () => {
   const user = auth().currentUser;

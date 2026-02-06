@@ -51,6 +51,7 @@ export default function DashboardScreen() {
   { name: 'Feedback', image: require('../assets/icons/feedback.png'), route: 'TeacherFeedBackScreen', roles: ['teacher'] },
   { name: 'FeedBack', image: require('../assets/icons/feedback.png'), route: 'ParentFeedBackScreen', roles: ['parent'] },
   { name: 'Statistics', image: require('../assets/icons/feedback.png'), route: 'TeacherStatsScreen', roles: ['teacher'] },
+  { name: 'Lớp học', image: require('../assets/icons/class.png'), route: 'ParentClassInfo', roles: ['parent'] },
 ];
 
   // 🔥 Điều hướng theo role và nested navigator
@@ -66,7 +67,7 @@ export default function DashboardScreen() {
       navigation.navigate('AdminApp', { screen: route });
       return;
     }
-    if (['ParentTuition', 'ParentCamera', 'ParentActivities', 'ParentFeedBackScreen'].includes(route)) {
+    if (['ParentTuition', 'ParentCamera', 'ParentActivities', 'ParentFeedBackScreen', 'ParentClassInfo'].includes(route)) {
       navigation.navigate('ParentApp', { screen: route });
       return;
     }
@@ -83,8 +84,6 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Hi 👋 {userName}</Text>
-
       <View style={styles.grid}>
         {features
           .filter(item => role !== null && item.roles.includes(role))

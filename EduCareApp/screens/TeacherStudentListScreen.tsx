@@ -142,14 +142,6 @@ if (filters.weightRange) {
 
   return (
     <View style={styles.container}>
-      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-        <TouchableOpacity onPress={() => {
-          navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'BottomTabs', params: { screen: 'Dashboard' } }] }));
-        }}>
-          <Image source={require("../assets/icons/back.png")} style={{ width: 24, height: 24 }} />
-        </TouchableOpacity>
-        <Text style={styles.header}>👩‍🏫 Student List</Text>
-      </View>
       <TextInput
         style={styles.searchBox}
         placeholder="Search student..."

@@ -23,7 +23,6 @@ import {
   updateStudent,
   getStudentById,
 } from "../src/services/studentService";
-import { getAllClasses, enrollStudentToClass } from "../src/services/classService";
 
 const EDUCATION_LEVELS = [
   { label: "Infant (0-12 tháng)", value: "infant" },
@@ -82,6 +81,16 @@ export default function AdminStudentFormScreen() {
     try {
       const res = await getStudentById(editId);
       const s = res.data;
+
+      const parentList = s.parents || [];
+      const foundFather = parentList.find((p: any) => 
+        (s.fatherName && p.name === s.fatherName) || 
+        (s.fatherPhone && p.phone === s.fatherPhone)
+      );
+      const foundMother = parentList.find((p: any) => 
+        (s.motherName && p.name === s.motherName) || 
+        (s.motherPhone && p.phone === s.motherPhone)
+      );
       setForm({
         ...s,
         targetLevel: s.targetLevel || "infant", // Load level
@@ -91,8 +100,9 @@ export default function AdminStudentFormScreen() {
         endDate: s.endDate ? new Date(s.endDate) : null,
         height: s.height?.toString() ?? "",
         weight: s.weight?.toString() ?? "",
-        fatherId: s.parents?.[0]?._id ?? "",
-        motherId: s.parents?.[1]?._id ?? "",
+        fatherId: foundFather?._id ?? "", 
+        motherId: foundMother?._id ?? "",
+        
         fatherName: s.fatherName ?? "",
         fatherPhone: s.fatherPhone ?? "",
         motherName: s.motherName ?? "",
@@ -103,62 +113,11 @@ export default function AdminStudentFormScreen() {
     }
   };
 
-  const handleSubmit = async () => {
-    console.log("FORM DEBUG:", form);
-
-    // VALIDATION
-    const heightNum = parseFloat(form.height);
-    if (!form.height || isNaN(heightNum) || heightNum <= 0) {
-      Alert.alert("Lỗi", "Chiều cao phải là số lớn hơn 0");
-      return;
-    }
-
-    const weightNum = parseFloat(form.weight);
-    if (!form.weight || isNaN(weightNum) || weightNum <= 0) {
-      Alert.alert("Lỗi", "Cân nặng phải là số lớn hơn 0");
-      return;
-    }
-
-    if (!form.targetLevel) return Alert.alert("Lỗi", "Chọn khối học (Level)");
-
-    // Joined date validation
-    if (!form.joinedDate) {
-      Alert.alert("Lỗi", "Phải nhập ngày nhập học");
-      return;
-    }
-
-    //if (form.joinedDate > new Date()) {
-      //Alert.alert("Lỗi", "Ngày nhập học không hợp lệ");
-      //return;
-   // }
-
-    // End date validation
-    if (form.endDate && form.endDate < form.joinedDate) {
-      Alert.alert(
-        "Lỗi",
-        "Ngày kết thúc học không được trước ngày nhập học"
-      );
-      return;
-    }
-
-    // Age validation
-    const dob = new Date(form.dob);
-    const today = new Date();
-    const ageInMonths =
-      (today.getFullYear() - dob.getFullYear()) * 12 +
-      (today.getMonth() - dob.getMonth());
-    const age = ageInMonths / 12;
-
-    const classRules: any = {
-      infant: { min: 0, max: 1 },
-      toddler: { min: 1, max: 2 },
-      preK2: { min: 2, max: 3 },
-      preK3: { min: 3, max: 4 },
-      preK4: { min: 4, max: 5 },
-      preK5: { min: 5, max: 6 },
-    };
-
+  const submitData = async () => {
     try {
+      const heightNum = parseFloat(form.height);
+      const weightNum = parseFloat(form.weight);
+
       const payload = {
         ...form,
         height: heightNum,
@@ -177,6 +136,83 @@ export default function AdminStudentFormScreen() {
     } catch (err: any) {
       Alert.alert("❌ Lỗi", err.message);
     }
+  };
+
+  const handleSubmit = async () => {
+    console.log("FORM DEBUG:", form);
+
+    // --- 1. VALIDATE CƠ BẢN ---
+    const heightNum = parseFloat(form.height);
+    if (!form.height || isNaN(heightNum) || heightNum <= 0) {
+      return Alert.alert("Lỗi", "Chiều cao phải là số lớn hơn 0");
+    }
+
+    const weightNum = parseFloat(form.weight);
+    if (!form.weight || isNaN(weightNum) || weightNum <= 0) {
+      return Alert.alert("Lỗi", "Cân nặng phải là số lớn hơn 0");
+    }
+
+    if (!form.targetLevel) return Alert.alert("Lỗi", "Chọn khối học (Level)");
+
+    if (!form.joinedDate) {
+      return Alert.alert("Lỗi", "Phải nhập ngày nhập học");
+    }
+
+    if (form.endDate && form.endDate < form.joinedDate) {
+      return Alert.alert("Lỗi", "Ngày kết thúc học không được trước ngày nhập học");
+    }
+    const now = new Date();
+    const dob = new Date(form.dob);
+    let years = now.getFullYear() - dob.getFullYear();
+    let months = now.getMonth() - dob.getMonth();
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+
+    // Kiểm tra logic theo từng Level
+    let isAgeValid = true;
+
+    switch (form.targetLevel) {
+      case "infant": // 0-12 tháng (< 1 tuổi)
+        if (years >= 1) isAgeValid = false;
+        break;
+      case "toddler": // 1-2 tuổi
+        if (years < 1 || years >= 2) isAgeValid = false;
+        break;
+      case "preK2": // 2-3 tuổi
+        if (years < 2 || years >= 3) isAgeValid = false;
+        break;
+      case "preK3": // 3-4 tuổi
+        if (years < 3 || years >= 4) isAgeValid = false;
+        break;
+      case "preK4": // 4-5 tuổi
+        if (years < 4 || years >= 5) isAgeValid = false;
+        break;
+      case "preK5": // 5-6 tuổi
+        if (years < 5 || years >= 6) isAgeValid = false; 
+        break;
+      default:
+        break;
+    }
+    if (!isAgeValid) {
+      const levelLabel = EDUCATION_LEVELS.find(l => l.value === form.targetLevel)?.label;
+      const ageString = years > 0 ? `${years} tuổi` : `${months} tháng`;
+
+      Alert.alert(
+        "⚠️ Cảnh báo độ tuổi",
+        `Bé hiện tại **${ageString}**, nhưng bạn đang xếp vào lớp **${levelLabel}**.\n\nBạn có chắc chắn muốn lưu không?`,
+        [
+          { text: "Chọn lại", style: "cancel" },
+          { 
+            text: "Vẫn lưu", 
+            onPress: submitData 
+          },
+        ]
+      );
+      return; 
+    }
+    submitData();
   };
 
   const handleToggleTrial = (value: boolean) => {

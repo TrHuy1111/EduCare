@@ -80,38 +80,37 @@ export const createOrUpdateUser = async (req, res) => {
 
 export const loginOrRegister = async (req, res) => {
   try {
-    const fbUser = req.firebaseUser;
-    if (!fbUser) {
-      return res.status(400).json({ message: "Missing Firebase user" });
+    if (!req.user) {
+        return res.status(401).json({ message: "Token invalid" });
     }
+    // req.user lấy từ token (do middleware verifyFirebaseToken giải mã)
+    const { uid, email } = req.user;
+    
+    // LOGIC : Ưu tiên lấy name từ Body (Register gửi lên)
+    // Nếu body không có thì mới lấy từ Token, cuối cùng là mặc định
+    const name = req.body.name || req.user.name || "User"; 
+    const phone = req.body.phone || req.user.phone_number;
 
-    let user = await User.findOne({ uid: fbUser.uid });
+    let user = await User.findOne({ uid });
 
     if (!user) {
-      user = await User.create({
-        uid: fbUser.uid,
-        email: fbUser.email,
-        phone: fbUser.phone,
-        name: fbUser.name || "No Name",
+      user = new User({
+        uid,
+        email,
+        name: name, 
+        phone: phone,
         role: "parent",
-        isActive: true,
       });
-
-      console.log("✅ New user created in MongoDB:", user.email);
-      return res.status(201).json({ message: "User created", user });
+      await user.save();
+    } else {
+      if (req.body.name) user.name = req.body.name;
+      if (req.body.phone) user.phone = req.body.phone;
+      await user.save();
     }
 
-    if (!user.isActive) {
-      return res.status(403).json({
-        message: "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.",
-      });
-    }
-
-    console.log("🔁 Existing user logged in:", user.email);
-    return res.status(200).json({ message: "User exists", user });
+    res.status(200).json({ message: "User synced", user });
   } catch (err) {
-    console.error("❌ Error in loginOrRegister:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 

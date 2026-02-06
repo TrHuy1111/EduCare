@@ -43,7 +43,12 @@ export default function ProfileDetailScreen() {
   };
 
   const pickImage = async () => {
-    const res = await launchImageLibrary({ mediaType: "photo" });
+    const res = await launchImageLibrary({ 
+      mediaType: "photo",
+      quality: 0.6,      
+      maxWidth: 800,      
+      maxHeight: 800,
+    });
     if (!res.assets?.[0]) return;
 
     const a = res.assets[0];

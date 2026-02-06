@@ -262,11 +262,8 @@ const handleOpenStudentManager = (item: any) => {
     );
   };
 
-  // ---------------- UI RETURN -------------------
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>🏫 Quản lý lớp học</Text>
-
       <TouchableOpacity style={styles.addBtn} onPress={() => setShowModal(true)}>
         <Text style={styles.addBtnText}>➕ Thêm lớp mới</Text>
       </TouchableOpacity>

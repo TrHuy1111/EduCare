@@ -12,16 +12,16 @@ import {
   RefreshControl
 } from "react-native";
 import auth from "@react-native-firebase/auth";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import {
   getAllAnnouncements,
   BASE_URL,
 } from "../src/services/announcementService";
 import { getNotifications, markNotificationRead } from "../src/services/notificationService";
-
+import { getUserProfile } from "../src/services/userService";
 export default function HomeScreen() {
   const navigation: any = useNavigation();
+  const [userName, setUserName] = useState('');
   const [events, setEvents] = useState<any[]>([]);
 
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -30,16 +30,36 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      loadUserData();
       loadEvents();
       loadNotifications(); 
     }, [])
   );
 
+  const loadUserData = async () => {
+    // 1. Ưu tiên lấy từ Backend (để đồng bộ với AccountScreen)
+    try {
+      const userBackend = await getUserProfile();
+      if (userBackend && userBackend.name) {
+        setUserName(userBackend.name);
+        return;
+      }
+    } catch (e) {
+      console.log("Không load được user backend, fallback sang firebase");
+    }
+
+    // 2. Fallback: Nếu backend lỗi thì mới lấy từ Firebase cache
+    const userFirebase = auth().currentUser;
+    if (userFirebase) {
+      setUserName(userFirebase.displayName || 'User');
+    }
+  };
+
   const loadNotifications = async () => {
     try {
       const res = await getNotifications();
-      setNotifications(res.data.data);
-      setUnreadCount(res.data.unreadCount);
+      setNotifications(res.data.data || []);
+      setUnreadCount(res.data.unreadCount || 0);
     } catch (e) {
       console.log("Notif error", e);
     }
@@ -67,23 +87,12 @@ export default function HomeScreen() {
     }
   };
 
-  const QuickItem = ({ icon, label, onPress }: any) => (
-    <TouchableOpacity style={styles.quickItem} onPress={onPress}>
-      <View style={styles.quickIcon}>
-        <Text style={{ fontSize: 22 }}>{icon}</Text>
-      </View>
-      <Text style={styles.quickText}>{label}</Text>
-    </TouchableOpacity>
-  );
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* ===== HEADER ===== */}
       <View style={styles.topCard}>
         <View>
-          <Text style={styles.hi}>
-            Hi, {auth().currentUser?.displayName || "User"}
-          </Text>
+          <Text style={styles.hi}>Hi 👋 {userName}</Text>
           <Text style={styles.subText}>EduCare App</Text>
         </View>
 
@@ -166,7 +175,7 @@ export default function HomeScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Thông báo mới</Text>
             
-            {notifications.length === 0 ? (
+            {(notifications || []).length === 0 ? (
               <Text style={{textAlign: 'center', color: '#666', marginTop: 20}}>
                 Không có thông báo nào.
               </Text>

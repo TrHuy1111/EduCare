@@ -1,11 +1,12 @@
 // src/services/classService.ts
 import axios from "axios";
 import auth from "@react-native-firebase/auth";
+import { API_BASE_URL , SERVER_URL} from '@env';
 
-const API_URL = "http://192.168.118.1:5000/api/class"; 
-export const BASE_URL = "http://192.168.118.1:5000"; 
+const API_URL = `${API_BASE_URL}/class`; 
+export const BASE_URL = SERVER_URL;
 
-// 🟢 Helper: Lấy Firebase token để xác thực
+//  xác thực
 const getAuthHeader = async () => {
   const user = auth().currentUser;
   if (!user) throw new Error("User not logged in");
@@ -15,19 +16,19 @@ const getAuthHeader = async () => {
   };
 };
 
-// 🏫 Lấy tất cả lớp
+//  Lấy tất cả lớp
 export const getAllClasses = async () => {
   const config = await getAuthHeader();
   return axios.get(API_URL, config);
 };
 
-// 📄 Lấy chi tiết 1 lớp theo ID
+//  Lấy chi tiết 1 lớp theo ID
 export const getClassById = async (classId: string) => {
   const config = await getAuthHeader();
   return axios.get(`${API_URL}/${classId}`, config);
 };
 
-// ➕ Tạo lớp mới
+//  Tạo lớp mới
 export const createClass = async (data: {
   name: string;
   level: string;
@@ -39,7 +40,7 @@ export const createClass = async (data: {
   return axios.post(API_URL, data, config);
 };
 
-// 👩‍🏫 Gán giáo viên vào lớp
+// Gán giáo viên vào lớp
 export const assignTeacherToClass = async (
   classId: string,
   teacherId: string
@@ -48,7 +49,7 @@ export const assignTeacherToClass = async (
   return axios.post(`${API_URL}/assign-teacher`, { classId, teacherId }, config);
 };
 
-// 🧑‍🎓 Gán học sinh vào lớp (nếu backend có hỗ trợ)
+//  Gán học sinh vào lớp (nếu backend có hỗ trợ)
 export const enrollStudentToClass = async (
   classId: string,
   studentId: string
@@ -62,12 +63,12 @@ export const removeStudentFromClass = async (classId: string, studentId: string)
   return axios.post(`${API_URL}/remove-student`, { classId, studentId }, config);
 };
 
-// 🗑️ Xóa lớp học
+//  Xóa lớp học
 export const deleteClass = async (classId: string) => {
   const config = await getAuthHeader();
   return axios.delete(`${API_URL}/${classId}`, config);
 };
-// 🗑️ Xóa giáo viên khỏi lớp
+// Xóa giáo viên khỏi lớp
 export const removeTeacherFromClass = async (classId: string, teacherId: string) => {
   const config = await getAuthHeader();
   return axios.post(`${API_URL}/remove-teacher`, { classId, teacherId }, config);
@@ -99,4 +100,9 @@ export const uploadClassCamera = async (
 export const getClassCamera = async (classId: string) => {
   const config = await getAuthHeader();
   return axios.get(`${API_URL}/${classId}/camera`, config);
+};
+
+export const getClassDetail = async (classId: string) => {
+  const config = await getAuthHeader();
+  return axios.get(`${API_URL}/${classId}/detail`, config);
 };
