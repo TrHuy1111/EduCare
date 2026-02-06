@@ -1,13 +1,21 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import {
+  FIREBASE_API_KEY,
+  FIREBASE_AUTH_DOMAIN,
+  FIREBASE_PROJECT_ID,
+  FIREBASE_STORAGE_BUCKET,
+  FIREBASE_MESSAGING_SENDER_ID,
+  FIREBASE_APP_ID
+} from '@env';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBVjBWgPtfrN48Cga7jzmMQN97-4OCmziE",
-  authDomain: "educare-3dd1b.firebaseapp.com",
-  projectId: "educare-3dd1b",
-  storageBucket: "educare-3dd1b.firebasestorage.app",
-  messagingSenderId: "989081587739",
-  appId: "1:989081587739:android:90ca2484fd25371c3a68be",
+  apiKey: FIREBASE_API_KEY,
+  authDomain: FIREBASE_AUTH_DOMAIN,
+  projectId: FIREBASE_PROJECT_ID,
+  storageBucket: FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
+  appId: FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
